@@ -1,2 +1,2 @@
 # kranka_ucm
-Codes written at UC Merced for the Isborn research group and others
+Codes written at UC Merced for the Isborn research group
