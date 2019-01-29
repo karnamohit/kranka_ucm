@@ -24,7 +24,7 @@ def get_xyz_from_dat_file(dat_file_path):
 
     for line in open(dat_file_path):
         list = line.split()
-        temp_x = float(list[0])*100
+        temp_x = float(list[0])
         temp_y = float(list[1])
         temp_z = float(list[2])
         x.append(temp_x)
@@ -60,7 +60,7 @@ def draw_heatmap(x, y, map_value, title):
     plt.title(plot_name)
     plt.colorbar().set_label(plot_name, rotation=270)
     ax = plt.gca()
-    ax.set_aspect('equal')
+    ax.set_aspect('auto')
     figure = plt.gcf()
     plt.savefig(img_name)
 #    plt.show()

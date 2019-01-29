@@ -14,7 +14,7 @@ import os
 import numpy as np
 import subprocess
 import shutil
-#import hmapocc 
+import hmapocc 
 
 '''
 
@@ -52,13 +52,13 @@ energyeV = 8.95			# excitation energy in eV
 stepsizefs = 0.0012		# step-size of propagation in femtoseconds
 strength = 0.005		# value of field strength in arbitrary units
 
-
-inp_key = 'main.txt'
-key_file = open(inp_key, 'r')
-
-key_lines = key_file.readlines()
-
-key_file.close()
+if (flag == 0):
+    inp_key = 'main.txt'
+    key_file = open(inp_key, 'r')
+#
+    key_lines = key_file.readlines()
+#
+    key_file.close()
 
 energyau = energyeV*0.0367493		# S0-S1 resonant frequency in Ha/a.u.
 
@@ -86,32 +86,40 @@ for i in range(1,Nfield+1):
 
 #print 'field_strength: \n', field
 
-for (n, line) in enumerate(key_lines):
-    if ('%chk=' in line and '_lr' in line):
-        elements = line.split('=')
-        lrchkfile = elements[1].rstrip()
+if (flag == 0):
+    inp_key = 'main.txt'
+    key_file = open(inp_key, 'r')
+#
+    key_lines = key_file.readlines()
+#
+    key_file.close()
+    
+    for (n, line) in enumerate(key_lines):
+        if ('%chk=' in line and '_lr' in line):
+            elements = line.split('=')
+            lrchkfile = elements[1].rstrip()
 #        print chkfile
-    elif ('%chk=' in line):
-        elements = line.split('=')
-        chkfile = elements[1].rstrip()
+        elif ('%chk=' in line):
+            elements = line.split('=')
+            chkfile = elements[1].rstrip()
 #        print lrchkfile
-    if ('maxpoints' in line):
-        elements = []
+        if ('maxpoints' in line):
+            elements = []
 #        print 'line: ',line
-        elements = line.split("=")
+            elements = line.split("=")
 #        print 'elements: \n', elements
-        elements = elements[3].split(')')
+            elements = elements[3].split(')')
 #        print 'elements[4].split(','): ',elements
-        timesteps_tot = elements[0]
-    if ('ElectricLength' in line):
-        elements = []
-        elements = key_lines[n].split('=')
+            timesteps_tot = elements[0]
+        if ('ElectricLength' in line):
+            elements = []
+            elements = key_lines[n].split('=')
 #        print 'elements: \n',elements
 #        print 'elements[1/7]: ',elements[1],' ',elements[7]
-        dumstr = elements[5].split('\n')
-        fieldstrengthx = dumstr[0]
-        elements = elements[2].split()
-        fieldtime = elements[0]
+            dumstr = elements[5].split('\n')
+            fieldstrengthx = dumstr[0]
+            elements = elements[2].split()
+            fieldtime = elements[0]
 
 tmp = 'tmp.tmp'
 tmp2 = 'tmp2.tmp'
@@ -204,9 +212,13 @@ elif (flag == 3):
             tmp_file.close()
             tmp_file2.close()
     gp_file.close()
-#elif (flag == 4):
-#    orb = int(float(sys.argv[2]))
-#    orb_name = 'avg_occup_orb_'+str(orb)
-#    dat_file_name = orb_name+'.dat'
-#    x, y, map_value = hmapocc.get_xyz_from_dat_file(dat_file_name)
-#    draw_heatmap(x, y, map_value, orb_name)
+elif (flag == 4):
+    orb = int(float(sys.argv[2]))
+    orb_name = 'avg_occup_orb_'+str(orb)
+    dat_file_name = orb_name+'.dat'
+    x, y, map_value = hmapocc.get_xyz_from_dat_file(dat_file_name)
+#    z = []
+#    for i in y:
+#        i = float(i)/41.34
+#       	z.append(i)   
+    hmapocc.draw_heatmap(x, y, map_value, orb_name)
