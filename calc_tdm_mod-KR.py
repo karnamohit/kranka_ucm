@@ -928,7 +928,7 @@ tdm.write(' \n ')
 tdm.write('Ground to excited state transition electric dipole moments \n ')
 tdm.write('     state      X       Y     Z     Dip. S.      Osc.     \n ' )
 for i in range(1,NStates):
-    tdm.write('%-10d %-10.6f %-10.6f %-10.6f %-10.6f %-10.6f' % (i, tdip[0][i][0]*(-1.0), tdip[0][i][1]*(-1.0), tdip[0][i][2]*(-1.0), 0, 0 ) + "\n")
+    tdm.write('%-10d %-10.6f %-10.6f %-10.6f %-10.6f %-10.6f' % (i, tdip[0][i][0], tdip[0][i][1], tdip[0][i][2], 0, 0 ) + "\n")
 
 # Excited to excited state transition dipole moments - bfh
 tdm.write(' \n')
@@ -939,7 +939,7 @@ tdm.write('Excited to excited state transition electric dipole moments \n ')
 tdm.write('  state I    state J      X       Y     Z     Dip. S.      Osc.     \n ' )
 for i in range(2,NStates):
     for j in range(1,i):
-        tdm.write('%10d %10d %-10.6f %-10.6f %-10.6f %-10.6f %-10.6f' % (i, j, tdip[j][i][0]*(-1.0), tdip[j][i][1]*(-1.0), tdip[j][i][2]*(-1.0), 0, 0 ) + "\n")
+        tdm.write('%10d %10d %-10.6f %-10.6f %-10.6f %-10.6f %-10.6f' % (i, j, tdip[j][i][0], tdip[j][i][1], tdip[j][i][2], 0, 0 ) + "\n")
  
 tdm.write(' \n ')
 tdm.write(' \n ')
