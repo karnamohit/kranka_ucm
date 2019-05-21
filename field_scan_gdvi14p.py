@@ -214,11 +214,17 @@ elif (flag == 3):
     gp_file.close()
 elif (flag == 4):
     orb = int(float(sys.argv[2]))
-    orb_name = 'avg_occup_orb_'+str(orb)
-    dat_file_name = orb_name+'.dat'
+    orb_name = 'MO #'+str(orb)
+    orb_plot_name = 'avg_occup_orb_'+str(orb)
+    dat_file_name = orb_plot_name+'.dat'
     x, y, map_value = hmapocc.get_xyz_from_dat_file(dat_file_name)
+#    x[:] = -x[:]
+#    y = []
+#    for i in y_temp:
+#        i = i/periodfs
+#        y.append(i)
 #    z = []
 #    for i in y:
 #        i = float(i)/41.34
 #       	z.append(i)   
-    hmapocc.draw_heatmap(x, y, map_value, orb_name)
+    hmapocc.draw_heatmap(x, y, map_value, orb_name, orb_plot_name)
