@@ -7,26 +7,33 @@ import re
 
 class el_info:
     
-    def __init__(self,NELECT, NMOs, fchkfile=None, logfile):
+    def __init__(self, logfile, fchkfile=None):
         
-        print('getting electronic info from the Gaussian files','"'+logfile+'"','and','"'+fchkfile+'"...')
-        
-        #print(fchkfile,logfile)
-        
-        self.nel = NELECT
-        self.nmo = NMOs
         self.fchkname = fchkfile
         self.logname = logfile
-                
-        file1 = open(self.logname,'r')
-        log_lines = file1.readlines()
-        file1.close()
-        self.loglines = [re.sub(r'D','E', s) for s in log_lines]
         
-		if (self.fchkname is not None):
-	        file1 = open(self.fchkname,'r')
-	        self.fchklines = file1.readlines()
-	        file1.close()
+        print('getting electronic info from the Gaussian files', \
+              '"',self.logname,'"','and','"',self.fchkname,'"...')
+        
+        #print(fchkfile,logfile)
+                        
+        file1 = open(self.logname,'r')
+        self.loglines = file1.readlines()
+        file1.close()
+        self.loglines = [re.sub(r'D','E', s) for s in self.loglines]
+        
+        for (n,line) in enumerate(self.loglines):
+            if ('primitive gaussians' in line):
+                Nbas = int(float(self.loglines[n].split()[0]))
+                NELECT = int(float(self.loglines[n+1].split()[0]))
+        
+        self.nel = NELECT
+        self.nmo = Nbas
+        
+        if (self.fchkname is not None):
+            file1 = open(self.fchkname,'r')
+            self.fchklines = file1.readlines()
+            file1.close()
     
     def overlapAO(self):
         
@@ -34,7 +41,7 @@ class el_info:
         
         line_num = []
 	
-        for (n, line) in enumerate(log_lines):
+        for (n, line) in enumerate(self.loglines):
             if ('*** Overlap ***' in line):
                 line_num.append(n)
         
@@ -58,7 +65,7 @@ class el_info:
                             end = i + 1
                         else:
                             end = 5
-                    elements=log_lines[n+2+k+shift+i].split()
+                    elements=self.loglines[n+2+k+shift+i].split()
                     for j in range(end):
                         s = k*5 + j
                         m = i + k*5
@@ -118,12 +125,13 @@ class el_info:
     
     def coefficientsMOalpha(self):
 	    
-		# read SCF MO coefficients as column-vectors
+        # read SCF MO coefficients as column-vectors
         
-		cMO = np.zeros([self.nmo,self.nmo], np.float64)
-        
-        if (self.fchkname is not None):
-		    alphaMO = []
+        NMOs = self.nmo
+        cMO = np.zeros([NMOs,NMOs], np.float64)
+         
+        if (self.fchkname != None):
+            alphaMO = []
             for (n,line) in enumerate(self.fchklines):
                 if ('Alpha MO coefficients' in line):
                     loops = int(self.nmo**2 / 5 + 1)
@@ -133,38 +141,38 @@ class el_info:
                         alphaMO.extend(elements)
                         k += 1
             
-	        alphaMO = float(alphaMO)
-			
-	        for i in range(self.nmo):
-	            for j in range(self.nmo):
-	                cMO[i,j] = alphaMO[i*self.nmo+j]
-	        
-	        cMO = cMO.T
-		else:
+            alphaMO = float(alphaMO)
+            
+            for i in range(self.nmo):
+                for j in range(self.nmo):
+                    cMO[i,j] = alphaMO[i*self.nmo+j]
+                
+            cMO = cMO.T
+        else:
             line_num = []
-		    for (n, line) in enumerate(log_lines):
-		    	if ('Alpha MOs' in line):
-		    	    line_num.append(n)
-		    count = -1
-		    nline = line_num[count]
+            for (n, line) in enumerate(self.loglines):
+                if ('Alpha MOs' in line):
+                    line_num.append(n)
+            count = -1
+            nline = line_num[count]
             loops = int(NMOs / 5) + 1
             last = NMOs % 5
             for k in range(loops):
-			    for i in range(NMOs):
+                for i in range(NMOs):
                     try:
                         if (k == (loops - 1)):
                             end = last
-                    	else:
-                    	    end = 5
-                    	dum1 = nline+3+k*(2+NMOs)+i
-                    	elements=log_lines[dum1].split()
+                        else:
+                            end = 5
+                        dum1 = nline+3+k*(2+NMOs)+i
+                        elements=self.loglines[dum1].split()
                         for j in range(end):
-						    s = k*5 + j
-						    m = i
-						    cMO[m][s] = float(elements[j+1])
-				    except (IndexError, ValueError):
-				        break
-		
+                            s = k*5 + j
+                            m = i
+                            cMO[m][s] = float(elements[j+1])
+                    except (IndexError, ValueError):
+                        break
+        
         return cMO
     
     def densityMO(self):
