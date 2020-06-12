@@ -13,7 +13,7 @@ class el_info:
         self.logname = logfile
         
         print('getting electronic info from the Gaussian files', \
-              '"',self.logname,'"','and','"',self.fchkname,'"...')
+              '"',self.logname,'"','and (if not "None")','"',self.fchkname,'"...')
         
         #print(fchkfile,logfile)
                         
