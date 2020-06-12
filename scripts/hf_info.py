@@ -175,10 +175,10 @@ class el_info:
         
         return cMO
     
-    def densityMO(self):
+    def densityMO_HF(self):
         
         densAO = self.densityAO()
-        MO = self.coefficientsMOalpha()
+        MO = self.coefficientsMOalpha()[:,:self.nel]
         SAO = self.overlapAO()
         
         rhoMO = MO.T.dot(SAO.dot(densAO.dot(SAO.dot(MO))))
