@@ -1,7 +1,24 @@
+#!/usr/bin/env python
+"""Extracts AO matrices from a Gaussian .LOG file. Provides log_data.
+
+log_data reads the .LOG file and stores lines, which its methods can
+use to extract the AO matrices. Also evaluates an effective one-elec-
+tron matrix for electron-electron interaction operator.
+"""
+
 import sys
 import os
 import re
 import numpy as np
+
+__author__ = "Karnamohit Ranka"
+__copyright__ = "N/A"
+__credits__ = ["Karnamohit Ranka", "Brad Habenicht"]
+__license__ = "N/A"
+__version__ = "N/A"
+__maintainer__ = "Karnamohit Ranka"
+__email__ = "kranka@ucmerced.edu"
+__status__ = "N/A"
 
 class log_data:
     #
@@ -75,7 +92,6 @@ class log_data:
         shift = 0
         loops = int(self.nao / 5) + 1
         last = int(self.nao % 5)
-        e = None
         for k in range(loops):
             try:
                 irange = self.nao - k*5
@@ -117,7 +133,6 @@ class log_data:
         shift = 0
         loops = int(self.nao / 5) + 1
         last = int(self.nao % 5)
-        e = None
         for k in range(loops):
             try:
                 irange = self.nao - k*5
@@ -159,7 +174,6 @@ class log_data:
         shift = 0
         loops = int(self.nao / 5) + 1
         last = int(self.nao % 5)
-        e = None
         for k in range(loops):
             try:
                 irange = self.nao - k*5
@@ -201,7 +215,6 @@ class log_data:
         shift = 0
         loops = int(self.nao / 5) + 1
         last = int(self.nao % 5)
-        e = None
         for k in range(loops):
             try:
                 irange = self.nao - k*5
