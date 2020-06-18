@@ -314,6 +314,11 @@ class log_data:
         elif (e == True):
             print('\nError: Shapes of density and ERI tensors are not compatible.')
             return
+    #
+    def get_core_AO(self):
+        #
+        core = self.get_kinetic_AO() + self.get_potential_AO()
+        return core
 
 def print_info(logic):
     if (logic == True):
@@ -336,6 +341,10 @@ def print_info(logic):
         print('|   get_potential_AO():                                |')
         print('|       returns the electron-nuclear potential energy  |')
         print('|       operator matrix, in AO basis.                  |')
+        print('|******************************************************|')
+        print('|   get_core_AO():                                     |')
+        print('|       returns the core Hamiltonian operator matrix,  |')
+        print('|       in AO basis.                                   |')
         print('|******************************************************|')
         print('|   get_density_AO():                                  |')
         print('|       returns the density matrix, in AO basis.       |')
