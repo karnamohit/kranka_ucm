@@ -72,7 +72,7 @@ class log_data:
             print('\nData read.')
             return
     #
-    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, start_inplace=False, n_0=None):
+    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=None):
         #
         if (start_inplace == False):
             n_0 = 0
@@ -114,7 +114,10 @@ class log_data:
                         m = i + k*columns
                         data[m,s] = float(elements[j+1])
                         if (i != j):
-                            data[s,m] = np.conjugate(data[m,s])
+                            if (imaginary == True and Hermitian == True):
+                                data[s,m] = -1*data[m,s]
+                            else:
+                                data[s,m] = data[m,s]
                 shift += irange
             except (IndexError, ValueError):
                 break
@@ -264,9 +267,9 @@ def print_info(logic):
         print('|       instance variables:                            |')
         print('|           logfile: path+name of the .LOG file        |')
         print('|           loglines: text, through readlines() method |')
+        print('|           nao: # of AO basis fns                     |')
         print('|           n_a: # of alpha electrons                  |')
         print('|           n_b: # of beta electrons                   |')
-        print('|           nao: # of AO basis fns                     |')
         print('|******************************************************|')
         print('|   Methods:                                           |')
         print('|******************************************************|')
@@ -316,7 +319,8 @@ def print_info(logic):
         print('|       only.                                          |')
         print('|******************************************************|')
         print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
-        print('|                          columns,                    |')
+        print('|                          columns, imaginary=False,   |')
+        print('|                          Hermitian=True,             |')
         print('|                          start_inplace=False,        |')
         print('|                          n_0=None):                  |')
         print('|       reads a lower triangular matrix in AO basis.   |')
