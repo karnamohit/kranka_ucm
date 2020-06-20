@@ -22,10 +22,7 @@ __status__ = "N/A"
 
 class log_data:
     #
-    def __init__(self, logfile=None, print_val=None, nonlog_error_msg=True):
-        #
-        if (print_val != None):
-            print_info(print_val)
+    def __init__(self, logfile=None, nonlog_error_msg=True):
         #
         if (logfile == None):
             print('\nNo file specified!')
@@ -33,9 +30,7 @@ class log_data:
             return
         else:
             # check if logfile exists
-            #print('\nDetecting whether the specified file exists...')
             if os.path.isfile(logfile) == True:
-                #print('\nFile detected. Specified file: "{}"\n'.format(logfile))
                 self.logfile = logfile
             elif os.path.isfile(logfile) == False:
                 print('\nError: Specified file ({}) does not exist.'.format(logfile))
@@ -51,12 +46,11 @@ class log_data:
         #
         gauss_log = True
         for (n,line) in enumerate(self.loglines):
-            # read # basis fns and electrons
+            # read no. of basis fns and electrons
             try: 
                 if ('primitive gaussians' in line):
                     elements = self.loglines[n].split()
                     elements2 = self.loglines[n+1].split()
-                    #print(elements[0], elements2[0], elements2[3])
                     self.nao = int(float(elements[0]))
                     self.n_a = int(float(elements2[0]))
                     self.n_b = int(float(elements2[3]))
@@ -339,7 +333,7 @@ def print_info(logic):
         print('|       NOTE: mainly for internal use, unless familiar |')
         print('|======================================================|')
     else:
-        print('set print_val=True to print info about this module')
+        print('\tCall as print_info(True) to print info about this module.')
     return
 
 if (__name__ == '__main__'):
