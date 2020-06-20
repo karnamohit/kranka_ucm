@@ -22,7 +22,7 @@ __status__ = "N/A"
 
 class log_data:
     #
-    def __init__(self, logfile=None, print_val=None):
+    def __init__(self, logfile=None, print_val=None, nonlog_error_msg=True):
         #
         if (print_val != None):
             print_info(print_val)
@@ -44,12 +44,12 @@ class log_data:
         #
         # reading "logfile" contents
         log_file = open(self.logfile, 'r')
-        print('\nReading data from {}...'.format(self.logfile))
+        print('\nReading data from {}...\n'.format(self.logfile))
         self.loglines = log_file.readlines()
         log_file.close()
         self.loglines = [re.sub(r'D','E', s) for s in self.loglines]
         #
-        error = False
+        gauss_log = True
         for (n,line) in enumerate(self.loglines):
             # read # basis fns and electrons
             try: 
@@ -62,15 +62,25 @@ class log_data:
                     self.n_b = int(float(elements2[3]))
                 #
             except (IndexError, ValueError, TypeError):
-                print('\n.LOG file not as expected.\nError occurred while trying to read data.')
-                print('\nExiting...')
-                error = True
+                gauss_log = False
+                break
         #
-        if error == True:
-            return
-        elif error == False:
-            print('\nData read.')
-            return
+        if (gauss_log == False and nonlog_error_msg == True):            
+            print('\nText file may not as expected (expecting Gaussian .LOG file).\n')
+            print('  "n_a", "n_b", "nao" instance variables will NOT be available.\n')
+            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"\n')
+            print('  methods may be accessible without errors. Use "help()" method\n')
+            print('  to get more information about this module.\n')
+        elif (gauss_log == True):
+            print('\nGaussian .LOG data read.\n')
+        #
+        return
+    #
+    def help(self):
+        #
+        print_info(True)
+        #
+        return
     #
     def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=None):
         #
@@ -264,7 +274,8 @@ def print_info(logic):
         print('|******************************************************|')
         print('|   log_data("/path/to/file.log"):                     |')
         print('|       reads text from "file.log" and extracts data   |')
-        print('|       accessible via the methods listed below.       |')
+        print('|       accessible via the methods listed below;       |')
+        print('|       expects "file.log" to be a Gaussian .LOG file. |')
         print('|       instance variables:                            |')
         print('|           logfile: path+name of the .LOG file        |')
         print('|           loglines: text, through readlines() method |')
