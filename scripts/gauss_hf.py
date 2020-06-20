@@ -60,10 +60,7 @@ class log_data:
                     self.nao = int(float(elements[0]))
                     self.n_a = int(float(elements2[0]))
                     self.n_b = int(float(elements2[3]))
-                    #
-                    self.nel = self.n_a + self.n_b
-                    self.vir_a = self.nao - self.n_a
-                    self.vir_b = self.nao - self.n_b
+                #
             except (IndexError, ValueError, TypeError):
                 print('\n.LOG file not as expected.\nError occurred while trying to read data.')
                 print('\nExiting...')
@@ -264,10 +261,12 @@ def print_info(logic):
         print('|   log_data("/path/to/file.log"):                     |')
         print('|       reads text from "file.log" and extracts data   |')
         print('|       accessible via the methods listed below.       |')
-        print('|       returns:                                       |')
-        print('|           nao, # of AO basis fns;                    |')
-        print('|           n_a, # of alpha electrons;                 |')
-        print('|           n_b, # of beta electrons.                  |')
+        print('|       instance variables:                            |')
+        print('|           logfile: path+name of the .LOG file        |')
+        print('|           loglines: text, through readlines() method |')
+        print('|           n_a: # of alpha electrons                  |')
+        print('|           n_b: # of beta electrons                   |')
+        print('|           nao: # of AO basis fns                     |')
         print('|******************************************************|')
         print('|   Methods:                                           |')
         print('|******************************************************|')
