@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 program to extract time, MO populations, instantaneous dipole moment and electric field info from 
-an rttddft simulation using a modified l512 and the Gaussian development version (gdv)
+an rttddft simulation using the older modified link 512 and the Gaussian development version (gdv)
 
 Running the script:
 $ ./rttddft_extractor_gdvi14p.py <.LOG file-name, w/o the extension> <# of MOs> <# of time-steps>
