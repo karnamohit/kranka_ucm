@@ -25,22 +25,20 @@ class log_data:
     def __init__(self, logfile=None, print_val=None):
         #
         if (print_val != None):
-            if (print_val == False):
-                print('set print_val=True to print info about this module\n')
-            else:
-                print_info(print_val)
+            print_info(print_val)
+        #
         if (logfile == None):
             print('\nNo file specified!')
             print('Exiting...')
             return
         else:
             # check if logfile exists
-            print('\nDetecting whether the specified file exists...')
+            #print('\nDetecting whether the specified file exists...')
             if os.path.isfile(logfile) == True:
-                print('\nFile detected. Specified file: "{}"\n'.format(logfile))
+                #print('\nFile detected. Specified file: "{}"\n'.format(logfile))
                 self.logfile = logfile
             elif os.path.isfile(logfile) == False:
-                print('\nError: Specified file does not exist.')
+                print('\nError: Specified file ({}) does not exist.'.format(logfile))
                 print('Exiting...')
                 return
         #
@@ -75,24 +73,33 @@ class log_data:
             return
         elif error == False:
             print('\nData read.')
+            return
     #
-    def get_overlap_AO(self):
+    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, start_inplace=False, n_0=None):
+        #
+        if (start_inplace == False):
+            n_0 = 0
+        elif (start_inplace == True):
+            assert n_0 != None, 'feed an integer value for "n_0".'
+        #
+        nbasis, skip, columns = int(nbasis), int(skip), int(columns)
         #
         line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('*** Overlap ***' in line):
+        for (n, line) in enumerate(self.loglines[n_0:]):
+            if (string in line):
                 line_num.append(n)
         #
-        overlap_data = np.zeros((self.nao, self.nao), np.float64)
+        data = np.zeros((nbasis, nbasis), np.float64)
         #
         count = 0
         n = line_num[count]
         shift = 0
-        loops = int(self.nao / 5) + 1
-        last = int(self.nao % 5)
+        #
+        loops = int(nbasis / columns) + 1
+        last = int(nbasis % columns)
         for k in range(loops):
             try:
-                irange = self.nao - k*5
+                irange = nbasis - k*columns
                 for i in range(irange):
                     if (k == (loops - 1)):
                         if (i < last):
@@ -100,145 +107,74 @@ class log_data:
                         else:
                             end = last
                     else:
-                        if (i <= 4):
+                        if (i <= (columns - 1)):
                             end = i + 1
                         else:
-                            end = 5
-                    elements=self.loglines[n+2+k+shift+i].split()
+                            end = columns
+                    elements=self.loglines[n+skip+k+shift+i].split()
                     for j in range(end):
-                        s = k*5 + j
-                        m = i + k*5
-                        overlap_data[m,s] = float(elements[j+1])
+                        s = k*columns + j
+                        m = i + k*columns
+                        data[m,s] = float(elements[j+1])
                         if (i != j):
-                            overlap_data[s,m] = overlap_data[m,s]
+                            data[s,m] = np.conjugate(data[m,s])
                 shift += irange
             except (IndexError, ValueError):
                 break
+        #
+        if (start_inplace == True):
+            return data, n
+        else:
+            return data
+    #
+    def get_overlap_AO(self):
+        #
+        string = '*** Overlap ***'
+        overlap_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return overlap_data
     #
     def get_kinetic_AO(self):
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('*** Kinetic Energy ***' in line):
-                line_num.append(n)
-        #
-        ke_data = np.zeros((self.nao, self.nao), np.float64)
-        #
-        count = 0
-        n = line_num[count]
-        shift = 0
-        loops = int(self.nao / 5) + 1
-        last = int(self.nao % 5)
-        for k in range(loops):
-            try:
-                irange = self.nao - k*5
-                for i in range(irange):
-                    if (k == (loops - 1)):
-                        if (i < last):
-                            end = i + 1
-                        else:
-                            end = last
-                    else:
-                        if (i <= 4):
-                            end = i + 1
-                        else:
-                            end = 5
-                    elements=self.loglines[n+2+k+shift+i].split()
-                    for j in range(end):
-                        s = k*5 + j
-                        m = i + k*5
-                        ke_data[m,s] = float(elements[j+1])
-                        if (i != j):
-                            ke_data[s,m] = ke_data[m,s]
-                shift += irange
-            except (IndexError, ValueError):
-                break
+        string = '*** Kinetic Energy ***'
+        ke_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return ke_data
     #
     def get_potential_AO(self):
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('***** Potential Energy *****' in line):
-                line_num.append(n)
-        #
-        pe_data = np.zeros((self.nao, self.nao), np.float64)
-        #
-        count = 0
-        n = line_num[count]
-        shift = 0
-        loops = int(self.nao / 5) + 1
-        last = int(self.nao % 5)
-        for k in range(loops):
-            try:
-                irange = self.nao - k*5
-                for i in range(irange):
-                    if (k == (loops - 1)):
-                        if (i < last):
-                            end = i + 1
-                        else:
-                            end = last
-                    else:
-                        if (i <= 4):
-                            end = i + 1
-                        else:
-                            end = 5
-                    elements=self.loglines[n+2+k+shift+i].split()
-                    for j in range(end):
-                        s = k*5 + j
-                        m = i + k*5
-                        pe_data[m,s] = float(elements[j+1])
-                        if (i != j):
-                            pe_data[s,m] = pe_data[m,s]
-                shift += irange
-            except (IndexError, ValueError):
-                break
+        string = '*** Potential Energy ***'
+        pe_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return pe_data
     #
     def get_density_AO(self):
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('Final density matrix:' in line):
-                line_num.append(n)
-        #
-        dens_data = np.zeros((self.nao, self.nao), np.float64)
-        #
-        count = 0
-        n = line_num[count]
-        shift = 0
-        loops = int(self.nao / 5) + 1
-        last = int(self.nao % 5)
-        for k in range(loops):
-            try:
-                irange = self.nao - k*5
-                for i in range(irange):
-                    if (k == (loops - 1)):
-                        if (i < last):
-                            end = i + 1
-                        else:
-                            end = last
-                    else:
-                        if (i <= 4):
-                            end = i + 1
-                        else:
-                            end = 5
-                    elements=self.loglines[n+2+k+shift+i].split()
-                    for j in range(end):
-                        s = k*5 + j
-                        m = i + k*5
-                        dens_data[m,s] = float(elements[j+1])
-                        if (i != j):
-                            dens_data[s,m] = dens_data[m,s]
-                shift += irange
-            except (IndexError, ValueError):
-                break
+        string = 'Final density matrix:'
+        dens_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return dens_data
+    #
+    def get_dipole_x_AO(self):
+        #
+        string = 'Multipole matrices IBuc=  518 IX=    1'
+        dipAO_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
+        #
+        return dipAO_data
+    #
+    def get_dipole_y_AO(self):
+        #
+        string = 'Multipole matrices IBuc=  518 IX=    2'
+        dipAO_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
+        #
+        return dipAO_data
+    #
+    def get_dipole_z_AO(self):
+        #
+        string = 'Multipole matrices IBuc=  518 IX=    3'
+        dipAO_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
+        #
+        return dipAO_data
     #
     def get_ee_twoe_AO(self):
         #
@@ -282,6 +218,8 @@ class log_data:
     #
     def get_ee_onee_AO(self, dens, ee_twoe, exchange=True):
         #
+        assert len(dens.shape) == 2
+        assert len(ee_twoe.shape) == 4
         assert dens.shape[0] == dens.shape[1], 'Density matrix (problem with axes 0 and 1, all axis-dimensions must be the same!)'
         assert ee_twoe.shape[0] == ee_twoe.shape[1], 'ERIs (problem with axes 0 and 1, all axis-dimensions must be the same!)'
         assert ee_twoe.shape[2] == ee_twoe.shape[3], 'ERIs (problem with axes 2 and 3, all axis-dimensions must be the same!)'
@@ -320,12 +258,12 @@ class log_data:
 
 def print_info(logic):
     if (logic == True):
-        print('|======================gauss_hf.py=====================|')
+        print('|=====================gauss_hf.py======================|')
         print('|   Class:                                             |')
         print('|******************************************************|')
-        print('|   log_data("file.log"):                              |')
+        print('|   log_data("/path/to/file.log"):                     |')
         print('|       reads text from "file.log" and extracts data   |')
-        print('|       accessible via the following methods.          |')
+        print('|       accessible via the methods listed below.       |')
         print('|       returns:                                       |')
         print('|           nao, # of AO basis fns;                    |')
         print('|           n_a, # of alpha electrons;                 |')
@@ -351,11 +289,23 @@ def print_info(logic):
         print('|   get_density_AO():                                  |')
         print('|       returns the density matrix, in AO basis.       |')
         print('|******************************************************|')
+        print('|   get_dipole_x_AO():                                 |')
+        print('|       returns the electric dipole moment matrix for  |')
+        print('|       Cartesian dipole operator "x" in AO basis.     |')
+        print('|******************************************************|')
+        print('|   get_dipole_y_AO():                                 |')
+        print('|       returns the electric dipole moment matrix for  |')
+        print('|       Cartesian dipole operator "y" in AO basis.     |')
+        print('|******************************************************|')
+        print('|   get_dipole_z_AO():                                 |')
+        print('|       returns the electric dipole moment matrix for  |')
+        print('|       Cartesian dipole operator "z" in AO basis.     |')
+        print('|******************************************************|')
         print('|   get_ee_twoe_AO():                                  |')
         print('|       returns the electron-electron repulsion inte-  |')
         print('|       grals, in a rank-4 tensor form, in AO basis.   |')
         print('|******************************************************|')
-        print('|   get_ee_onee_AO(dens=dens_bas, ee_twoe=ee_twoe_bas, |')
+        print('|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |')
         print('|                  exchange=True):                     |')
         print('|       returns an effective one-electron matrix for   |')
         print('|       electron-electron interaction, evaluated using |')
@@ -365,22 +315,30 @@ def print_info(logic):
         print('|       "exchange" set to "True", includes the exchange|')
         print('|       integrals in the evaluation, otherwise Coulomb-|')
         print('|       only.                                          |')
+        print('|******************************************************|')
+        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
+        print('|                          columns,                    |')
+        print('|                          start_inplace=False,        |')
+        print('|                          n_0=None):                  |')
+        print('|       reads a lower triangular matrix in AO basis.   |')
+        print('|       NOTE: mainly for internal use, unless familiar |')
         print('|======================================================|')
     else:
-        print('call as print_info(True) to print info about this module')
+        print('set print_val=True to print info about this module')
     return
 
 if (__name__ == '__main__'):
     print('|======================================================|')
     print('|Use "gauss_hf.py" as a python module:                 |')
     print('|>>> import gauss_hf                                   |')
-    print('|===================gauss_hf.py========================|')
+    print('|>>> from gauss_hf import *                            |')
+    print('|====================gauss_hf.py=======================|')
     print('|     Use "gauss_hf.py" ONLY if interested in the      |')
     print('|     information extracted by this script, from       |')
     print('| a Gaussian .LOG file of a Hartree-Fock calculation.  |')
     print('|======================================================|')
     print('| IMPORTANT NOTE:                                      |')
-    print('|======================================================|')
+    print('|******************************************************|')
     print('| It is assumed the following keywords and IOp flags   |')
     print('| are specified in the route section of Gaussian       |')
     print('| input:                                               |')
