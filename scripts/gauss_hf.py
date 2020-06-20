@@ -78,6 +78,7 @@ class log_data:
             n_0 = 0
         elif (start_inplace == True):
             assert n_0 != None, 'feed an integer value for "n_0".'
+            n_0 = int(n_0)
         #
         nbasis, skip, columns = int(nbasis), int(skip), int(columns)
         #
