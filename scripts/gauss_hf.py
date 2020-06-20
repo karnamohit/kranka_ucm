@@ -148,7 +148,7 @@ class log_data:
     #
     def get_potential_AO(self):
         #
-        string = '*** Potential Energy ***'
+        string = '***** Potential Energy *****'
         pe_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return pe_data
@@ -258,8 +258,10 @@ class log_data:
     #
     def get_core_AO(self):
         #
-        core = self.get_kinetic_AO() + self.get_potential_AO()
-        return core
+        string = '****** Core Hamiltonian ******'
+        core_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
+        #
+        return core_data
 
 def print_info(logic):
     if (logic == True):
