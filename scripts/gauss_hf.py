@@ -47,23 +47,21 @@ class log_data:
         gauss_log = True
         for (n,line) in enumerate(self.loglines):
             # read no. of basis fns and electrons
-            try: 
-                if ('primitive gaussians' in line):
-                    elements = self.loglines[n].split()
-                    elements2 = self.loglines[n+1].split()
-                    self.nao = int(float(elements[0]))
-                    self.n_a = int(float(elements2[0]))
-                    self.n_b = int(float(elements2[3]))
+            if ('primitive gaussians' in line):
+                elements = self.loglines[n].split()
+                elements2 = self.loglines[n+1].split()
+                self.nao = int(float(elements[0]))
+                self.n_a = int(float(elements2[0]))
+                self.n_b = int(float(elements2[3]))
                 #
-            except (IndexError, ValueError, TypeError):
+            else:
                 gauss_log = False
-                break
         #
-        if (gauss_log == False and nonlog_error_msg == True):            
+        if (gauss_log == False):            
             print('\nText file may not as expected (expecting Gaussian .LOG file).\n')
-            print('  "n_a", "n_b", "nao" instance variables will NOT be available.\n')
-            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"\n')
-            print('  methods may be accessible without errors. Use "help()" method\n')
+            print('  "n_a", "n_b", "nao" instance variables will NOT be available.')
+            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"')
+            print('  methods may be accessible without errors. Use "help()" method')
             print('  to get more information about this module.\n')
         elif (gauss_log == True):
             print('\nGaussian .LOG data read.\n')
