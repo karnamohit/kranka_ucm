@@ -58,7 +58,7 @@ class log_data:
                 gauss_log = False
         #
         if (gauss_log == False):            
-            print('\nText file may not as expected (expecting Gaussian .LOG file).\n')
+            print('\nText file may not as expected (expecting Gaussian .LOG file):')
             print('  "n_a", "n_b", "nao" instance variables will NOT be available.')
             print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"')
             print('  methods may be accessible without errors. Use "help()" method')
