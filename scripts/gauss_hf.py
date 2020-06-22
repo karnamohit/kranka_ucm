@@ -10,6 +10,7 @@ import sys
 import os
 import re
 import numpy as np
+from numba import jit
 
 __author__ = "Karnamohit Ranka"
 __copyright__ = "N/A"
@@ -93,6 +94,7 @@ class log_data:
         #
         count = 0
         n = line_num[count]
+        m = n + skip
         shift = 0
         #
         loops = int(nbasis / columns) + 1
@@ -121,12 +123,13 @@ class log_data:
                                 data[s,m] = -1*data[m,s]
                             else:
                                 data[s,m] = data[m,s]
+                    m += 1
                 shift += irange
             except (IndexError, ValueError):
                 break
         #
         if (start_inplace == True):
-            return data, n
+            return data, m
         else:
             return data
     #
@@ -219,6 +222,7 @@ class log_data:
             print('Two-electron integrals not found.')
             return
     #
+    @jit
     def get_ee_onee_AO(self, dens, ee_twoe, exchange=True):
         #
         assert len(dens.shape) == 2
@@ -345,6 +349,11 @@ if (__name__ == '__main__'):
     print('|     Use "gauss_hf.py" ONLY if interested in the      |')
     print('|     information extracted by this script, from       |')
     print('| a Gaussian .LOG file of a Hartree-Fock calculation.  |')
+    print('|======================================================|')
+    print('| python libraries required:                           |')
+    print('|     numpy; numba: may need to install separately.    |')
+    print('|     re; os; sys: usually included with standard      |')
+    print('|         with standard python.                        |')
     print('|======================================================|')
     print('| IMPORTANT NOTE:                                      |')
     print('|******************************************************|')
