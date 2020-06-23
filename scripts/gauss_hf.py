@@ -10,7 +10,7 @@ import sys
 import os
 import re
 import numpy as np
-from numba import jit
+#from numba import jit
 
 __author__ = "Karnamohit Ranka"
 __copyright__ = "N/A"
@@ -88,7 +88,7 @@ class log_data:
         line_num = []
         for (n, line) in enumerate(self.loglines[n_0:]):
             if (string in line):
-                line_num.append(n + n_0)
+                line_num.append(n+n_0)
         #
         data = np.zeros((nbasis, nbasis), np.float64)
         #
@@ -222,7 +222,7 @@ class log_data:
             print('Two-electron integrals not found.')
             return
     #
-    @jit
+    #@jit
     def get_ee_onee_AO(self, dens, ee_twoe, exchange=True):
         #
         assert len(dens.shape) == 2
