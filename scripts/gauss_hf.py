@@ -88,7 +88,7 @@ class log_data:
         line_num = []
         for (n, line) in enumerate(self.loglines[n_0:]):
             if (string in line):
-                line_num.append(n)
+                line_num.append(n + n_0)
         #
         data = np.zeros((nbasis, nbasis), np.float64)
         #
