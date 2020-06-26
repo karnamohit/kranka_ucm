@@ -10,7 +10,7 @@ import sys
 import os
 import re
 import numpy as np
-#from numba import jit
+from numba import jit
 
 __author__ = "Karnamohit Ranka"
 __copyright__ = "N/A"
@@ -222,48 +222,48 @@ class log_data:
             print('Two-electron integrals not found.')
             return
     #
-    #@jit
-    def get_ee_onee_AO(self, dens, ee_twoe, exchange=True):
-        #
-        assert len(dens.shape) == 2
-        assert len(ee_twoe.shape) == 4
-        assert dens.shape[0] == dens.shape[1], 'Density matrix (problem with axes 0 and 1, all axis-dimensions must be the same!)'
-        assert ee_twoe.shape[0] == ee_twoe.shape[1], 'ERIs (problem with axes 0 and 1, all axis-dimensions must be the same!)'
-        assert ee_twoe.shape[2] == ee_twoe.shape[3], 'ERIs (problem with axes 2 and 3, all axis-dimensions must be the same!)'
-        assert ee_twoe.shape[0] == ee_twoe.shape[2], 'ERIs (problem with axes 0 and 2, all axis-dimensions must be the same!)'
-        e = True
-        if (dens.shape[0] == ee_twoe.shape[0]):
-            nbas = dens.shape[0]
-            vee_data = np.zeros((nbas, nbas), np.float64)
-            e = False
-            if (exchange == True):
-                for u in range(nbas):
-                    for v in range(u,nbas):
-                        for l in range(nbas):
-                            for s in range(nbas):
-                                # coulomb - 0.5*exchange
-                                vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
-                                vee_data[u,v] -= dens[l,s]*(0.5*ee_twoe[u,l,v,s])
-                        vee_data[v,u] = np.conjugate(vee_data[u,v])
-            elif (exchange == False):
-                for u in range(nbas):
-                    for v in range(u,nbas):
-                        for l in range(nbas):
-                            for s in range(nbas):
-                                # coulomb
-                                vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
-                        vee_data[v,u] = np.conjugate(vee_data[u,v])
-            return vee_data
-        elif (e == True):
-            print('\nError: Shapes of density and ERI tensors are not compatible.')
-            return
-    #
     def get_core_AO(self):
         #
         string = '****** Core Hamiltonian ******'
         core_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
         return core_data
+
+@jit
+def get_ee_onee_AO(dens, ee_twoe, exchange=True):
+    #
+    assert len(dens.shape) == 2
+    assert len(ee_twoe.shape) == 4
+    assert dens.shape[0] == dens.shape[1], 'Density matrix (problem with axes 0 and 1, all axis-dimensions must be the same!)'
+    assert ee_twoe.shape[0] == ee_twoe.shape[1], 'ERIs (problem with axes 0 and 1, all axis-dimensions must be the same!)'
+    assert ee_twoe.shape[2] == ee_twoe.shape[3], 'ERIs (problem with axes 2 and 3, all axis-dimensions must be the same!)'
+    assert ee_twoe.shape[0] == ee_twoe.shape[2], 'ERIs (problem with axes 0 and 2, all axis-dimensions must be the same!)'
+    e = True
+    if (dens.shape[0] == ee_twoe.shape[0]):
+        nbas = dens.shape[0]
+        vee_data = np.zeros((nbas, nbas), np.float64)
+        e = False
+        if (exchange == True):
+            for u in range(nbas):
+                for v in range(u,nbas):
+                    for l in range(nbas):
+                        for s in range(nbas):
+                            # coulomb - 0.5*exchange
+                            vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
+                            vee_data[u,v] -= dens[l,s]*(0.5*ee_twoe[u,l,v,s])
+                    vee_data[v,u] = np.conjugate(vee_data[u,v])
+        elif (exchange == False):
+            for u in range(nbas):
+                for v in range(u,nbas):
+                    for l in range(nbas):
+                        for s in range(nbas):
+                            # coulomb
+                            vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
+                    vee_data[v,u] = np.conjugate(vee_data[u,v])
+        return vee_data
+    elif (e == True):
+        print('\nError: Shapes of density and ERI tensors are not compatible.')
+        return
 
 def print_info(logic):
     if (logic == True):
@@ -317,6 +317,16 @@ def print_info(logic):
         print('|       returns the electron-electron repulsion inte-  |')
         print('|       grals, in a rank-4 tensor form, in AO basis.   |')
         print('|******************************************************|')
+        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
+        print('|                          columns, imaginary=False,   |')
+        print('|                          Hermitian=True,             |')
+        print('|                          start_inplace=False,        |')
+        print('|                          n_0=None):                  |')
+        print('|       reads a lower triangular matrix in AO basis.   |')
+        print('|       NOTE: mainly for internal use, unless familiar |')
+        print('|******************************************************|')
+        print('|   Functions:                                         |')
+        print('|******************************************************|')
         print('|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |')
         print('|                  exchange=True):                     |')
         print('|       returns an effective one-electron matrix for   |')
@@ -327,14 +337,6 @@ def print_info(logic):
         print('|       "exchange" set to "True", includes the exchange|')
         print('|       integrals in the evaluation, otherwise Coulomb-|')
         print('|       only.                                          |')
-        print('|******************************************************|')
-        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
-        print('|                          columns, imaginary=False,   |')
-        print('|                          Hermitian=True,             |')
-        print('|                          start_inplace=False,        |')
-        print('|                          n_0=None):                  |')
-        print('|       reads a lower triangular matrix in AO basis.   |')
-        print('|       NOTE: mainly for internal use, unless familiar |')
         print('|======================================================|')
     else:
         print('\tCall as print_info(True) to print info about this module.')
