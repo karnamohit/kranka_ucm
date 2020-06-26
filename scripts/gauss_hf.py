@@ -40,12 +40,13 @@ class log_data:
         #
         # reading "logfile" contents
         log_file = open(self.logfile, 'r')
-        print('\nReading data from {}...\n'.format(self.logfile))
+        print('\nReading data from {}...'.format(self.logfile))
         self.loglines = log_file.readlines()
         log_file.close()
         self.loglines = [re.sub(r'D','E', s) for s in self.loglines]
         #
         gauss_log = True
+        dum = 0
         for (n,line) in enumerate(self.loglines):
             # read no. of basis fns and electrons
             if ('primitive gaussians' in line):
@@ -54,9 +55,10 @@ class log_data:
                 self.nao = int(float(elements[0]))
                 self.n_a = int(float(elements2[0]))
                 self.n_b = int(float(elements2[3]))
-                #
-            else:
-                gauss_log = False
+                dum = 1
+        #
+        if (dum == 0):
+            gauss_log = False
         #
         if (gauss_log == False):            
             print('\nText file may not as expected (expecting Gaussian .LOG file):')
