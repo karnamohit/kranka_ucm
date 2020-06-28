@@ -135,6 +135,38 @@ class log_data:
         else:
             return data
     #
+    def get_MOcoeffs_AO(self):
+        # read SCF MO coefficients as column-vectors
+        NAOs = self.nao
+        cMO = np.zeros([NAOs,NAOs], np.float64)
+        #
+        line_num = []
+        for (n, line) in enumerate(self.loglines):
+            if ('Alpha MOs:' in line):
+                line_num.append(n)
+        #
+        count = -1
+        nline = line_num[count]
+        loops = int(NAOs / 5) + 1
+        last = NAOs % 5
+        for k in range(loops):
+            for i in range(NAOs):
+                try:
+                    if (k == (loops - 1)):
+                        end = last
+                    else:
+                        end = 5
+                    dum1 = nline+3+k*(2+NAOs)+i
+                    elements=self.loglines[dum1].split()
+                    for j in range(end):
+                        s = k*5 + j
+                        m = i
+                        cMO[m,s] = float(elements[j+1])
+                except (IndexError, ValueError):
+                    break
+        #
+        return cMO
+    #
     def get_overlap_AO(self):
         #
         string = '*** Overlap ***'
@@ -284,6 +316,10 @@ def print_info(logic):
         print('|           n_b: # of beta electrons                   |')
         print('|******************************************************|')
         print('|   Methods:                                           |')
+        print('|******************************************************|')
+        print('|   get_MOcoeffs_AO():                                 |')
+        print('|       returns the matrix of alpha MO coefficients    |')
+        print('|       (as column-vectors) in AO basis.               |')
         print('|******************************************************|')
         print('|   get_overlap_AO():                                  |')
         print('|       returns the overlap matrix, S, in AO basis.    |')
