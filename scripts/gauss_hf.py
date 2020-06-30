@@ -283,8 +283,8 @@ def get_ee_onee_AO(dens, ee_twoe, exchange=True):
                     for l in range(nbas):
                         for s in range(nbas):
                             # coulomb - 0.5*exchange
-                            vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
-                            vee_data[u,v] -= dens[l,s]*(0.5*ee_twoe[u,l,v,s])
+                            vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                            vee_data[u,v] -= 2*dens[l,s]*(0.5*ee_twoe[u,l,v,s])
                     vee_data[v,u] = np.conjugate(vee_data[u,v])
         elif (exchange == False):
             for u in range(nbas):
@@ -292,7 +292,7 @@ def get_ee_onee_AO(dens, ee_twoe, exchange=True):
                     for l in range(nbas):
                         for s in range(nbas):
                             # coulomb
-                            vee_data[u,v] += dens[l,s]*(ee_twoe[u,v,l,s])
+                            vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
                     vee_data[v,u] = np.conjugate(vee_data[u,v])
         return vee_data
     elif (e == True):
