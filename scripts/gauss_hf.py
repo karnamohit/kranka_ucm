@@ -337,7 +337,7 @@ def print_info(logic):
         print('|       in AO basis.                                   |')
         print('|******************************************************|')
         print('|   get_density_AO():                                  |')
-        print('|       returns the density matrix, in AO basis.       |')
+        print('|       returns the alpha density matrix, in AO basis. |')
         print('|******************************************************|')
         print('|   get_dipole_x_AO():                                 |')
         print('|       returns the electric dipole moment matrix for  |')
