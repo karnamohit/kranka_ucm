@@ -56,6 +56,9 @@ class log_data:
                 self.n_a = int(float(elements2[0]))
                 self.n_b = int(float(elements2[3]))
                 dum = 1
+            if ('NAtoms' in line):
+                elements = self.loglines[n].split()
+                self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
         #
         if (dum == 0):
             gauss_log = False
@@ -68,10 +71,6 @@ class log_data:
             print('  to get more information about this module.\n')
         elif (gauss_log == True):
             print('\nGaussian .LOG data read.\n')
-        #
-        if ('NAtoms' in self.loglines):
-            elements = self.loglines[n].split()
-            self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
         #
         return
     #
