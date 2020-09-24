@@ -69,6 +69,10 @@ class log_data:
         elif (gauss_log == True):
             print('\nGaussian .LOG data read.\n')
         #
+        if ('NAtoms' in self.loglines):
+            elements = self.loglines[n].split()
+            self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
+        #
         return
     #
     def help(self):
@@ -78,10 +82,7 @@ class log_data:
         return
     #
     def get_molecule(self):
-        if ('NAtoms' in self.loglines):
-            elements = log_lines[n].split()
-            NAtoms = int(float(elements[1]))  # total numer of atoms in the system
-        #
+        NAtoms = self.NAtoms
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
         for (n, line) in enumerate(self.loglines):
@@ -364,7 +365,7 @@ def print_info(logic):
         print('|       in AO basis.                                   |')
         print('|******************************************************|')
         print('|   get_density_AO():                                  |')
-        print('|       returns the alpha density matrix, in AO basis. |')
+        print('|       returns the density matrix, in AO basis.       |')
         print('|******************************************************|')
         print('|   get_dipole_x_AO():                                 |')
         print('|       returns the electric dipole moment matrix for  |')
