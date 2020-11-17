@@ -56,6 +56,13 @@ class log_data:
                 self.n_a = int(float(elements2[0]))
                 self.n_b = int(float(elements2[3]))
                 dum = 1
+            if ('NAtoms' in line):
+                try:
+                    elements = self.loglines[n].split()
+                    self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
+                except ValueError:
+                    elements = self.loglines[n].split('=')
+                    self.NAtoms = int(float(elements[1]))
         #
         if (dum == 0):
             gauss_log = False
@@ -76,6 +83,23 @@ class log_data:
         print_info(True)
         #
         return
+    #
+    def get_molecule(self):
+        NAtoms = self.NAtoms
+        coords = np.zeros([NAtoms,3], np.float64)
+        atom_info = np.zeros([NAtoms,3], np.float64)
+        for (n, line) in enumerate(self.loglines):
+            if (' Standard basis:' in line):
+                for i in range(NAtoms):
+                    elements = self.loglines[n + i + 6].split()
+                    atom_info[i,0] = int(float(elements[0]))  # atomic center number
+                    atom_info[i,1] = int(float(elements[1]))  # atomic number
+                    atom_info[i,2] = float(elements[2])  # atomic type
+                    # coordinate values in angstroms
+                    coords[i,0] = float(elements[3])  # atomic center along x-axis
+                    coords[i,1] = float(elements[4])  # atomic center along y-axis
+                    coords[i,2] = float(elements[5])  # atomic center along z-axis
+        return atom_info, coords
     #
     def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=None):
         #
@@ -316,6 +340,13 @@ def print_info(logic):
         print('|           n_b: # of beta electrons                   |')
         print('|******************************************************|')
         print('|   Methods:                                           |')
+        print('|******************************************************|')
+        print('|   get_molecule():                                    |')
+        print('|       returns two 2-D arrays containing information  |')
+        print('|       about molecular geometry. First array contains |')
+        print('|       atomic character info; second array contains   |')
+        print('|       coordinates, in angstroms, of the corresponding|')
+        print('|       atoms.                                         |')
         print('|******************************************************|')
         print('|   get_MOcoeffs_AO():                                 |')
         print('|       returns the matrix of alpha MO coefficients    |')

@@ -57,8 +57,12 @@ class log_data:
                 self.n_b = int(float(elements2[3]))
                 dum = 1
             if ('NAtoms' in line):
-                elements = self.loglines[n].split()
-                self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
+                try:
+                    elements = self.loglines[n].split()
+                    self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
+                except ValueError:
+                    elements = self.loglines[n].split('=')
+                    self.NAtoms = int(float(elements[1]))
         #
         if (dum == 0):
             gauss_log = False
@@ -88,8 +92,8 @@ class log_data:
             if (' Standard basis:' in line):
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
-                    atom_info[i,0] = float(elements[0])  # atomic center number
-                    atom_info[i,1] = float(elements[1])  # atomic number
+                    atom_info[i,0] = int(float(elements[0]))  # atomic center number
+                    atom_info[i,1] = int(float(elements[1]))  # atomic number
                     atom_info[i,2] = float(elements[2])  # atomic type
                     # coordinate values in angstroms
                     coords[i,0] = float(elements[3])  # atomic center along x-axis
