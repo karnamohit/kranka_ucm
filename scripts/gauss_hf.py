@@ -213,7 +213,7 @@ class log_data:
         return pe_data
     #
     def get_density_AO(self):
-        #
+        # getting the reference alpha spin-density matrix
         string = 'Final density matrix:'
         dens_data = self.get_matrix_lowtri_AO(string, self.nao, 2, 5)
         #
