@@ -10,7 +10,6 @@ import sys
 import os
 import re
 import numpy as np
-from numba import jit
 
 __author__ = "Karnamohit Ranka"
 __copyright__ = "N/A"
@@ -287,8 +286,7 @@ class log_data:
         #
         return core_data
 
-@jit
-def get_ee_onee_AO(dens, ee_twoe, exchange=True):
+def get_ee_onee_AO(dens, ee_twoe, exchange=True, rhf=True):
     #
     assert len(dens.shape) == 2
     assert len(ee_twoe.shape) == 4
@@ -297,26 +295,32 @@ def get_ee_onee_AO(dens, ee_twoe, exchange=True):
     assert ee_twoe.shape[2] == ee_twoe.shape[3], 'ERIs (problem with axes 2 and 3, all axis-dimensions must be the same!)'
     assert ee_twoe.shape[0] == ee_twoe.shape[2], 'ERIs (problem with axes 0 and 2, all axis-dimensions must be the same!)'
     e = True
+    # the no-4-FOR-loops way: thanks to Dr. Harish Bhat (https://github.com/hbhat4000)
     if (dens.shape[0] == ee_twoe.shape[0]):
         nbas = dens.shape[0]
         vee_data = np.zeros((nbas, nbas), np.float64)
         e = False
+        ee_twoe_coul = ee_twoe.reshape((nbas, nbas, nbas**2))
         if (exchange == True):
+            ee_twoe_ex = np.swapaxes(ee_twoe, 1, 2).reshape((nbas, nbas, nbas**2))
             for u in range(nbas):
                 for v in range(u,nbas):
-                    for l in range(nbas):
-                        for s in range(nbas):
-                            # coulomb - 0.5*exchange
-                            vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
-                            vee_data[u,v] -= 2*dens[l,s]*(0.5*ee_twoe[u,l,v,s])
+                    # coulomb - 0.5*exchange
+                    # for l in range(nbas):
+                    #     for s in range(nbas):
+                    #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                    #         vee_data[u,v] -= 2*dens[l,s]*(0.5*ee_twoe[u,l,v,s])
+                    vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
+                    vee_data[u,v] -= 2 * 0.5 * ee_twoe_ex[u,v,:] @ dens.reshape((-1))
                     vee_data[v,u] = np.conjugate(vee_data[u,v])
         elif (exchange == False):
             for u in range(nbas):
                 for v in range(u,nbas):
-                    for l in range(nbas):
-                        for s in range(nbas):
-                            # coulomb
-                            vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                    # coulomb
+                    # for l in range(nbas):
+                    #     for s in range(nbas):
+                    #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                    vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
                     vee_data[v,u] = np.conjugate(vee_data[u,v])
         return vee_data
     elif (e == True):
@@ -368,7 +372,8 @@ def print_info(logic):
         print('|       in AO basis.                                   |')
         print('|******************************************************|')
         print('|   get_density_AO():                                  |')
-        print('|       returns the density matrix, in AO basis.       |')
+        print('|       returns the alpha spin-density matrix, in AO   |')
+        print('|       basis. Assumes restricted reference.           |')
         print('|******************************************************|')
         print('|   get_dipole_x_AO():                                 |')
         print('|       returns the electric dipole moment matrix for  |')
@@ -386,18 +391,10 @@ def print_info(logic):
         print('|       returns the electron-electron repulsion inte-  |')
         print('|       grals, in a rank-4 tensor form, in AO basis.   |')
         print('|******************************************************|')
-        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
-        print('|                          columns, imaginary=False,   |')
-        print('|                          Hermitian=True,             |')
-        print('|                          start_inplace=False,        |')
-        print('|                          n_0=None):                  |')
-        print('|       reads a lower triangular matrix in AO basis.   |')
-        print('|       NOTE: mainly for internal use, unless familiar |')
-        print('|******************************************************|')
         print('|   Functions:                                         |')
         print('|******************************************************|')
         print('|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |')
-        print('|                  exchange=True):                     |')
+        print('|                  exchange=True, , rhf=True):         |')
         print('|       returns an effective one-electron matrix for   |')
         print('|       electron-electron interaction, evaluated using |')
         print('|       the ERIs stored in the 4-rank tensor           |')
@@ -405,7 +402,16 @@ def print_info(logic):
         print('|       (same basis set is assumed for both). If       |')
         print('|       "exchange" set to "True", includes the exchange|')
         print('|       integrals in the evaluation, otherwise Coulomb-|')
-        print('|       only.                                          |')
+        print('|       only. Needs alpha spin density, assumes        |')
+        print('|       restricted reference.                          |')
+        print('|******************************************************|')
+        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
+        print('|                          columns, imaginary=False,   |')
+        print('|                          Hermitian=True,             |')
+        print('|                          start_inplace=False,        |')
+        print('|                          n_0=None):                  |')
+        print('|       reads a lower triangular matrix in AO basis.   |')
+        print('|       NOTE: mainly for internal use, unless familiar |')
         print('|======================================================|')
     else:
         print('\tCall as print_info(True) to print info about this module.')
@@ -413,18 +419,20 @@ def print_info(logic):
 
 if (__name__ == '__main__'):
     print('|======================================================|')
-    print('|Use "gauss_hf.py" as a python module:                 |')
-    print('|>>> import gauss_hf                                   |')
-    print('|>>> from gauss_hf import *                            |')
+    print('| Using "gauss_hf.py" as a python module:              |')
+    print('| 1. Copy to the same folder as your .py/.ipynb file.  |')
+    print('| 2. Try either of these:                              |')
+    print('|    >>> import gauss_hf                               |')
+    print('|    >>> from gauss_hf import *                        |')
     print('|====================gauss_hf.py=======================|')
     print('|     Use "gauss_hf.py" ONLY if interested in the      |')
     print('|     information extracted by this script, from       |')
     print('| a Gaussian .LOG file of a Hartree-Fock calculation.  |')
     print('|======================================================|')
-    print('| python libraries required:                           |')
-    print('|     numpy; numba: may need to install separately.    |')
+    print('| Python libraries required:                           |')
+    print('|     numpy: may need to install separately.           |')
     print('|     re; os; sys: usually included with standard      |')
-    print('|         with standard python.                        |')
+    print('|                  Python installation.                |')
     print('|======================================================|')
     print('| IMPORTANT NOTE:                                      |')
     print('|******************************************************|')
@@ -437,4 +445,5 @@ if (__name__ == '__main__'):
     print('|     symm=noint iop(3/33=3) pop(full)             &   |')
     print('|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |')
     print('|======================================================|')
+    print('|                                                      |')
     print_info(True)
