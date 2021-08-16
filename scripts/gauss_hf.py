@@ -190,6 +190,39 @@ class log_data:
         #
         return cMO
     #
+    def get_CASSCF_MOcoeffs_AO(self):
+        #
+        NAOs = self.nao
+        cMO_CI = np.zeros([NAOs,NAOs], np.float64)
+        line_num = []
+        for (n, line) in enumerate(self.loglines):
+            try:
+                if ('FINAL COEFFICIENT MATRIX' in line):
+                    line_num.append(n)
+            except (IndexError, ValueError):
+                pass
+        #
+        count = -1
+        nline = line_num[count]
+        loops = int(NAOs / 10) + 1
+        last = NAOs % 10
+        for i in range(NAOs):
+            for k in range(loops):
+                try:
+                    if (k == (loops - 1)):
+                        end = last
+                    else:
+                        end = 10
+                    dum1 = nline+1+i*(1+loops)+(k+1)
+                    elements=log_lines[dum1].split()
+                    for j in range(end):
+                        s = k*10 + j
+                        m = i
+                        cMO_CI[s,m] = float(elements[j])
+                except (IndexError, ValueError):
+                    break
+        return cMO_CI
+    #
     def get_overlap_AO(self):
         #
         string = '*** Overlap ***'
@@ -355,6 +388,11 @@ def print_info(logic):
         print('|   get_MOcoeffs_AO():                                 |')
         print('|       returns the matrix of alpha MO coefficients    |')
         print('|       (as column-vectors) in AO basis.               |')
+        print('|******************************************************|')
+        print('|   get_CASSCF_MOcoeffs_AO():                          |')
+        print('|       returns the matrix of alpha MO coefficients    |')
+        print('|       (as column-vectors) in AO basis for a CASSCF   |')
+        print('|       calculation.                                   |')
         print('|******************************************************|')
         print('|   get_overlap_AO():                                  |')
         print('|       returns the overlap matrix, S, in AO basis.    |')
