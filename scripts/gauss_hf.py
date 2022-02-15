@@ -67,10 +67,10 @@ class log_data:
             gauss_log = False
         #
         if (gauss_log == False):            
-            print('\nText file may not as expected (expecting Gaussian .LOG file):')
-            print('  "n_a", "n_b", "nao" instance variables will NOT be available.')
-            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"')
-            print('  methods may be accessible without errors. Use "help()" method')
+            print('\nText file may not be as expected (expecting Gaussian .LOG file):')
+            print('  "n_a", "n_b", "nao" instance variables will NOT be available.   ')
+            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"   ')
+            print('  methods may be accessible without errors. Use "help()" method   ')
             print('  to get more information about this module.\n')
         elif (gauss_log == True):
             print('\nGaussian .LOG data read.\n')
@@ -459,6 +459,11 @@ if (__name__ == '__main__'):
     print('|======================================================|')
     print('| Using "gauss_hf.py" as a python module:              |')
     print('| 1. Copy to the same folder as your .py/.ipynb file.  |')
+    print('|                        OR                            |')
+    print('|    Add the path to "gauss_hf.py" to your system path:|')
+    print('|    >>> import sys                                    |')
+    print("|    >>> sys.path.append('/path/to/file/')             |")
+    print('|                                                      |')
     print('| 2. Try either of these:                              |')
     print('|    >>> import gauss_hf                               |')
     print('|    >>> from gauss_hf import *                        |')
