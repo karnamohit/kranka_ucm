@@ -214,7 +214,7 @@ class log_data:
                     else:
                         end = 10
                     dum1 = nline+1+i*(1+loops)+(k+1)
-                    elements=log_lines[dum1].split()
+                    elements=self.loglines[dum1].split()
                     for j in range(end):
                         s = k*10 + j
                         m = i
