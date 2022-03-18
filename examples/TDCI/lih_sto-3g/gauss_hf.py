@@ -106,9 +106,9 @@ class log_data:
             s='''
             \tText file may not be as expected (expecting Gaussian .LOG file):
             \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
-            \tFurther, only "find_linenum()", "get_matrix_lowtri_AO()" and 
-            \t"get_ee_onee_AO()" methods may be accessible without errors. Use 
-            \t"help()" method to get more information about this module.\n
+            \tFurther, only "find_linenum()", "get_ee_onee_AO()" functions and
+            \t"get_matrix_lowtri_AO()" method may be accessible without errors. 
+            \tUse "help()" method to get more information about this module.\n
             '''
             print(s)
         elif (gauss_log == True):
@@ -585,8 +585,8 @@ if (__name__ == '__main__'):
     \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
     \t|     symm=noint iop(3/33=3) pop(full)             &   |
     \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
-    \t|======================================================|\n
-    \t|                                                      |\n
+    \t|======================================================|
+    \t|                                                      |
     '''
     print(s)
     print_info(True)
