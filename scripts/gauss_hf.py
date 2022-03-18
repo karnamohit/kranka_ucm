@@ -128,7 +128,7 @@ class log_data:
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
         try:
-            lst = find_linenum(' Standard basis:',logfile)
+            lst = find_linenum(' Standard basis:',self.logfile)
             for n in lst[0]:
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
@@ -173,7 +173,7 @@ class log_data:
         nbasis, skip, columns = int(nbasis), int(skip), int(columns)
         #
         try:
-            lst = find_linenum(string,logfile)
+            lst = find_linenum(string,self.logfile)
             line_num = [lst[i] + n_0 for i in range(len(lst))]
         except:
             line_num = []
@@ -236,7 +236,7 @@ class log_data:
         cMO = np.zeros([NAOs,NAOs], np.float64)
         #
         try:
-            line_num = find_linenum('Alpha MOs:',logfile)
+            line_num = find_linenum('Alpha MOs:',self.logfile)
         except:
             line_num = []
             for (n, line) in enumerate(self.loglines):
@@ -277,7 +277,7 @@ class log_data:
         cMO_CI = np.zeros([NAOs,NAOs], np.float64)
         #
         try:
-            line_num = find_linenum('FINAL COEFFICIENT MATRIX',logfile)
+            line_num = find_linenum('FINAL COEFFICIENT MATRIX',self.logfile)
         except:
             line_num = []
             for (n, line) in enumerate(self.loglines):
