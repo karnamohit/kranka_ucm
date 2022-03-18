@@ -366,43 +366,49 @@ class log_data:
     #
     def get_ee_twoe_AO(self):
         #
-        linenum = []
-        read_error = True
-        for (n,line) in enumerate(self.loglines):
-            if ('*** Eumping Two-Electron integrals ***' in line):
-                read_error = False
-                linenum.append(n)
+        try:
+            line_num = find_linenum('*** Dumping Two-Electron integrals ***',self.logfile)
+            read_error = False
+        except:
+            line_num = []
+            for (n,line) in enumerate(self.loglines):
+                if ('*** Eumping Two-Electron integrals ***' in line):
+                    read_error = False
+                    line_num.append(n)
         #
-        if (read_error == False):
-            twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
-            count = -1
-            n = linenum[count]
-            k = 7
-            while (k < self.nao**4):
-                try:
-                    elements = self.loglines[n+k].split()
-                    # the two-electron integrals are in Mulliken/chemist's notation: [uv|ls] (cf. Szabo, Ostlund: Table 2.2)
-                    u = int(float(elements[1])) - 1 # in the AO basis index notation, \mu
-                    v = int(float(elements[3])) - 1 # \nu
-                    l = int(float(elements[5])) - 1 # \lambda
-                    s = int(float(elements[7])) - 1 # \sigma
-                    uvls = float(elements[9])
-                    twoe_AO_4D[u,v,l,s] = uvls
-                    # 8-fold permutation symmetry of 2-e integrals (w/ real basis fns)
-                    twoe_AO_4D[l,s,u,v] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[v,u,s,l] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[s,l,v,u] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[v,u,l,s] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[s,l,u,v] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[u,v,s,l] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[l,s,v,u] = twoe_AO_4D[u,v,l,s]
-                    k += 1
-                except (IndexError, ValueError, TypeError, NameError):
-                    break
-            return twoe_AO_4D
-        else:
+        try:
+            assert len(line_num) > 0
+        except:
             print('Two-electron integrals not found.')
             return
+        #
+        twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
+        count = -1
+        n = linenum[count]
+        k = 7
+        while (k < self.nao**4):
+            try:
+                elements = self.loglines[n+k].split()
+                # the two-electron integrals are in Mulliken/chemist's notation: [uv|ls] (cf. Szabo, Ostlund: Table 2.2)
+                u = int(float(elements[1])) - 1 # in the AO basis index notation, \mu
+                v = int(float(elements[3])) - 1 # \nu
+                l = int(float(elements[5])) - 1 # \lambda
+                s = int(float(elements[7])) - 1 # \sigma
+                uvls = float(elements[9])
+                twoe_AO_4D[u,v,l,s] = uvls
+                # 8-fold permutation symmetry of 2-e integrals (w/ real basis fns)
+                twoe_AO_4D[l,s,u,v] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[v,u,s,l] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[s,l,v,u] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[v,u,l,s] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[s,l,u,v] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[u,v,s,l] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[l,s,v,u] = twoe_AO_4D[u,v,l,s]
+                k += 1
+            except (IndexError, ValueError, TypeError, NameError):
+                break
+        #
+        return twoe_AO_4D
     #
     def get_core_AO(self):
         #

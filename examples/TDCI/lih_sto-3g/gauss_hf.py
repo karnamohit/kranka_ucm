@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-"""Extracts AO matrices from a Gaussian .LOG file. Provides log_data.
 
-log_data reads the .LOG file and stores lines, which its methods can
-use to extract the AO matrices. Also evaluates an effective one-elec-
-tron matrix for electron-electron interaction operator.
+"""Extracts matrices from a Gaussian .LOG file. Provides the class "log_data".
+
+log_data reads the .LOG file and stores lines, which its methods can use to 
+extract the AO basis matrices. Also evaluates an effective one-elecron matrix
+for the electron-electron Coulombic interaction operator.
 """
 
 import sys
 import os
+import subprocess
 import re
 import numpy as np
 
@@ -19,6 +21,12 @@ __version__ = "N/A"
 __maintainer__ = "Karnamohit Ranka"
 __email__ = "kranka@ucmerced.edu"
 __status__ = "N/A"
+
+def find_linenum(s,txtfile): # locate matching string's line number(s) using `grep`
+    strg = subprocess.Popen(['grep','-n', s, txtfile], stdout=subprocess.PIPE).stdout.read().decode("utf-8")
+    lst = strg.split("\n")[:-1]
+    lst = [int(lst[i].split(":")[0]) for i in range(len(lst))]
+    return lst
 
 class log_data:
     #
@@ -46,32 +54,63 @@ class log_data:
         #
         gauss_log = True
         dum = 0
-        for (n,line) in enumerate(self.loglines):
+        try:
             # read no. of basis fns and electrons
-            if ('primitive gaussians' in line):
+            lst1 = find_linenum('primitive gaussians',logfile)
+            for n in lst1[0]:
                 elements = self.loglines[n].split()
                 elements2 = self.loglines[n+1].split()
                 self.nao = int(float(elements[0]))
                 self.n_a = int(float(elements2[0]))
                 self.n_b = int(float(elements2[3]))
                 dum = 1
-            if ('NAtoms' in line):
+            # read atomic information
+            lst2 = find_linenum('NAtoms',logfile)
+            for n in lst2[0]:
                 try:
                     elements = self.loglines[n].split()
                     self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
                 except ValueError:
                     elements = self.loglines[n].split('=')
                     self.NAtoms = int(float(elements[1]))
+        except:
+            lst1, lst2 = [], []
+            for (n,line) in enumerate(self.loglines):
+                if ('primitive gaussians' in line):
+                    lst1.append(n)
+                    elements = self.loglines[n].split()
+                    elements2 = self.loglines[n+1].split()
+                    self.nao = int(float(elements[0]))
+                    self.n_a = int(float(elements2[0]))
+                    self.n_b = int(float(elements2[3]))
+                    dum = 1
+                if ('NAtoms' in line):
+                    lst2.append(n)
+                    try:
+                        elements = self.loglines[n].split()
+                        self.NAtoms = int(float(elements[1]))
+                    except ValueError:
+                        elements = self.loglines[n].split('=')
+                        self.NAtoms = int(float(elements[1]))
+        #
+        try:
+            assert len(lst1) > 0; assert len(lst2) > 0
+        except:
+            print('''
+            \tlooking for basis set, electronic, and atomic info but not found in file!
+            ''')
+            pass
         #
         if (dum == 0):
             gauss_log = False
         #
         if (gauss_log == False):
-            s='''\tText file may not be as expected (expecting Gaussian .LOG file):
-            \t"n_a", "n_b", "nao" instance variables will NOT be available.
-            \tFurther, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"
-            \tmethods may be accessible without errors. Use "help()" method
-            \tto get more information about this module.\n
+            s='''
+            \tText file may not be as expected (expecting Gaussian .LOG file):
+            \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
+            \tFurther, only "find_linenum()", "get_matrix_lowtri_AO()" and 
+            \t"get_ee_onee_AO()" methods may be accessible without errors. Use 
+            \t"help()" method to get more information about this module.\n
             '''
             print(s)
         elif (gauss_log == True):
@@ -89,8 +128,9 @@ class log_data:
         NAtoms = self.NAtoms
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
-        for (n, line) in enumerate(self.loglines):
-            if (' Standard basis:' in line):
+        try:
+            lst = find_linenum(' Standard basis:',self.logfile)
+            for n in lst[0]:
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
                     atom_info[i,0] = int(float(elements[0]))  # atomic center number
@@ -100,22 +140,53 @@ class log_data:
                     coords[i,0] = float(elements[3])  # atomic center along x-axis
                     coords[i,1] = float(elements[4])  # atomic center along y-axis
                     coords[i,2] = float(elements[5])  # atomic center along z-axis
+        except:
+            lst = []
+            for (n, line) in enumerate(self.loglines):
+                if (' Standard basis:' in line):
+                    lst.append(n)
+                    for i in range(NAtoms):
+                        elements = self.loglines[n + i + 6].split()
+                        atom_info[i,0] = int(float(elements[0]))
+                        atom_info[i,1] = int(float(elements[1]))
+                        atom_info[i,2] = float(elements[2])
+                        coords[i,0] = float(elements[3])
+                        coords[i,1] = float(elements[4])
+                        coords[i,2] = float(elements[5])
+        #
+        try:
+            assert len(lst) > 0
+        except:
+            print('looking for molecular info but not found in file. Exiting...')
+            return
+        #
         return atom_info, coords
     #
-    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=None):
+    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=0):
         #
-        if (start_inplace == False):
-            n_0 = 0
-        elif (start_inplace == True):
-            assert n_0 != None, 'feed an integer value for "n_0".'
-            n_0 = int(n_0)
+        if start_inplace:
+            if type(n_0) != int:
+                print('proper value for "n_0" not provided. Setting n_0=0 (default value)')
+                n_0 = 0
+            elif n_0 == 0:
+                print('warning: detected n_0=0. might want to specify different value of "n_0" if start_inplace=True.')
         #
         nbasis, skip, columns = int(nbasis), int(skip), int(columns)
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines[n_0:]):
-            if (string in line):
-                line_num.append(n+n_0)
+        try:
+            lst = find_linenum(string,self.logfile)
+            line_num = [lst[i] + n_0 for i in range(len(lst))]
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines[n_0:]):
+                if (string in line):
+                    line_num.append(n+n_0)
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format(string))
+            return
         #
         data = np.zeros((nbasis, nbasis), np.float64)
         #
@@ -165,10 +236,19 @@ class log_data:
         NAOs = self.nao
         cMO = np.zeros([NAOs,NAOs], np.float64)
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('Alpha MOs:' in line):
-                line_num.append(n)
+        try:
+            line_num = find_linenum('Alpha MOs:',self.logfile)
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines):
+                if ('Alpha MOs:' in line):
+                    line_num.append(n)
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
+            return
         #
         count = -1
         nline = line_num[count]
@@ -196,13 +276,23 @@ class log_data:
         #
         NAOs = self.nao
         cMO_CI = np.zeros([NAOs,NAOs], np.float64)
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            try:
-                if ('FINAL COEFFICIENT MATRIX' in line):
-                    line_num.append(n)
-            except (IndexError, ValueError):
-                pass
+        #
+        try:
+            line_num = find_linenum('FINAL COEFFICIENT MATRIX',self.logfile)
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines):
+                try:
+                    if ('FINAL COEFFICIENT MATRIX' in line):
+                        line_num.append(n)
+                except:
+                    pass
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
+            return
         #
         count = -1
         nline = line_num[count]
@@ -276,43 +366,49 @@ class log_data:
     #
     def get_ee_twoe_AO(self):
         #
-        linenum = []
-        read_error = True
-        for (n,line) in enumerate(self.loglines):
-            if ('*** Eumping Two-Electron integrals ***' in line):
-                read_error = False
-                linenum.append(n)
+        try:
+            line_num = find_linenum('*** Dumping Two-Electron integrals ***',self.logfile)
+            read_error = False
+        except:
+            line_num = []
+            for (n,line) in enumerate(self.loglines):
+                if ('*** Eumping Two-Electron integrals ***' in line):
+                    read_error = False
+                    line_num.append(n)
         #
-        if (read_error == False):
-            twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
-            count = -1
-            n = linenum[count]
-            k = 7
-            while (k < self.nao**4):
-                try:
-                    elements = self.loglines[n+k].split()
-                    # the two-electron integrals are in Mulliken/chemist's notation: [uv|ls] (cf. Szabo, Ostlund: Table 2.2)
-                    u = int(float(elements[1])) - 1 # in the AO basis index notation, \mu
-                    v = int(float(elements[3])) - 1 # \nu
-                    l = int(float(elements[5])) - 1 # \lambda
-                    s = int(float(elements[7])) - 1 # \sigma
-                    uvls = float(elements[9])
-                    twoe_AO_4D[u,v,l,s] = uvls
-                    # 8-fold permutation symmetry of 2-e integrals (w/ real basis fns)
-                    twoe_AO_4D[l,s,u,v] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[v,u,s,l] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[s,l,v,u] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[v,u,l,s] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[s,l,u,v] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[u,v,s,l] = twoe_AO_4D[u,v,l,s]
-                    twoe_AO_4D[l,s,v,u] = twoe_AO_4D[u,v,l,s]
-                    k += 1
-                except (IndexError, ValueError, TypeError, NameError):
-                    break
-            return twoe_AO_4D
-        else:
+        try:
+            assert len(line_num) > 0
+        except:
             print('Two-electron integrals not found.')
             return
+        #
+        twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
+        count = -1
+        n = linenum[count]
+        k = 7
+        while (k < self.nao**4):
+            try:
+                elements = self.loglines[n+k].split()
+                # the two-electron integrals are in Mulliken/chemist's notation: [uv|ls] (cf. Szabo, Ostlund: Table 2.2)
+                u = int(float(elements[1])) - 1 # in the AO basis index notation, \mu
+                v = int(float(elements[3])) - 1 # \nu
+                l = int(float(elements[5])) - 1 # \lambda
+                s = int(float(elements[7])) - 1 # \sigma
+                uvls = float(elements[9])
+                twoe_AO_4D[u,v,l,s] = uvls
+                # 8-fold permutation symmetry of 2-e integrals (w/ real basis fns)
+                twoe_AO_4D[l,s,u,v] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[v,u,s,l] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[s,l,v,u] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[v,u,l,s] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[s,l,u,v] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[u,v,s,l] = twoe_AO_4D[u,v,l,s]
+                twoe_AO_4D[l,s,v,u] = twoe_AO_4D[u,v,l,s]
+                k += 1
+            except (IndexError, ValueError, TypeError, NameError):
+                break
+        #
+        return twoe_AO_4D
     #
     def get_core_AO(self):
         #
@@ -436,6 +532,12 @@ def print_info(logic):
         \t|******************************************************|
         \t|   Functions:                                         |
         \t|******************************************************|
+        \t|   find_linenum(string, filename):                    |
+        \t|       returns a list of line-numbers (0-indexed),    |
+        \t|       that have text matching <string>, for          |
+        \t|       <filename>. This function uses `grep` so using |
+        \t|       this script on a Linux machine is preferred.   |
+        \t|******************************************************|
         \t|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |
         \t|                  exchange=True, , rhf=True):         |
         \t|       returns an effective one-electron matrix for   |
@@ -485,8 +587,8 @@ if (__name__ == '__main__'):
     \t|======================================================|
     \t| Python libraries required:                           |
     \t|     numpy: may need to install separately.           |
-    \t|     re; os; sys: usually included with standard      |
-    \t|                  Python installation.                |
+    \t|     re; os; sys, subprocess: usually included with   |
+    \t|            standard Python installation.             |
     \t|======================================================|
     \t| IMPORTANT NOTE:                                      |
     \t|******************************************************|
