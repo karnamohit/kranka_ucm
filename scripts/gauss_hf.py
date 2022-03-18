@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""Extracts AO matrices from a Gaussian .LOG file. Provides log_data.
 
-log_data reads the .LOG file and stores lines, which its methods can
-use to extract the AO matrices. Also evaluates an effective one-elec-
-tron matrix for electron-electron interaction operator.
+"""Extracts matrices from a Gaussian .LOG file. Provides the class "log_data".
+
+log_data reads the .LOG file and stores lines, which its methods can use to 
+extract the AO basis matrices. Also evaluates an effective one-elecron matrix
+for the electron-electron Coulombic interaction operator.
 """
 
 import sys
