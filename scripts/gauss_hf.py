@@ -8,6 +8,7 @@ tron matrix for electron-electron interaction operator.
 
 import sys
 import os
+import subprocess
 import re
 import numpy as np
 
@@ -19,6 +20,12 @@ __version__ = "N/A"
 __maintainer__ = "Karnamohit Ranka"
 __email__ = "kranka@ucmerced.edu"
 __status__ = "N/A"
+
+def find_linenum(s,txtfile): # locate matching string's line number(s) using `grep`
+    strg = subprocess.Popen(['grep','-n', s, txtfile], stdout=subprocess.PIPE).stdout.read().decode("utf-8")
+    lst = strg.split("\n")[:-1]
+    lst = [int(lst[i].split(":")[0]) for i in range(len(lst))]
+    return lst
 
 class log_data:
     #
@@ -46,34 +53,67 @@ class log_data:
         #
         gauss_log = True
         dum = 0
-        for (n,line) in enumerate(self.loglines):
+        try:
             # read no. of basis fns and electrons
-            if ('primitive gaussians' in line):
+            lst1 = find_linenum('primitive gaussians',logfile)
+            for n in lst1[0]:
                 elements = self.loglines[n].split()
                 elements2 = self.loglines[n+1].split()
                 self.nao = int(float(elements[0]))
                 self.n_a = int(float(elements2[0]))
                 self.n_b = int(float(elements2[3]))
                 dum = 1
-            if ('NAtoms' in line):
+            # read atomic information
+            lst2 = find_linenum('NAtoms',logfile)
+            for n in lst2[0]:
                 try:
                     elements = self.loglines[n].split()
                     self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
                 except ValueError:
                     elements = self.loglines[n].split('=')
                     self.NAtoms = int(float(elements[1]))
+        except:
+            lst1, lst2 = [], []
+            for (n,line) in enumerate(self.loglines):
+                if ('primitive gaussians' in line):
+                    lst1.append(n)
+                    elements = self.loglines[n].split()
+                    elements2 = self.loglines[n+1].split()
+                    self.nao = int(float(elements[0]))
+                    self.n_a = int(float(elements2[0]))
+                    self.n_b = int(float(elements2[3]))
+                    dum = 1
+                if ('NAtoms' in line):
+                    lst2.append(n)
+                    try:
+                        elements = self.loglines[n].split()
+                        self.NAtoms = int(float(elements[1]))
+                    except ValueError:
+                        elements = self.loglines[n].split('=')
+                        self.NAtoms = int(float(elements[1]))
+        #
+        try:
+            assert len(lst1) > 0; assert len(lst2) > 0
+        except:
+            print('''
+            \tlooking for basis set, electronic, and atomic info but not found in file!
+            ''')
+            pass
         #
         if (dum == 0):
             gauss_log = False
         #
-        if (gauss_log == False):            
-            print('\nText file may not be as expected (expecting Gaussian .LOG file):')
-            print('  "n_a", "n_b", "nao" instance variables will NOT be available.   ')
-            print('  Further, only "get_matrix_lowtri_AO()" and "get_ee_onee_AO()"   ')
-            print('  methods may be accessible without errors. Use "help()" method   ')
-            print('  to get more information about this module.\n')
+        if (gauss_log == False):
+            s='''
+            \tText file may not be as expected (expecting Gaussian .LOG file):
+            \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
+            \tFurther, only "find_linenum()", "get_matrix_lowtri_AO()" and 
+            \t"get_ee_onee_AO()" methods may be accessible without errors. Use 
+            \t"help()" method to get more information about this module.\n
+            '''
+            print(s)
         elif (gauss_log == True):
-            print('\nGaussian .LOG data read.\n')
+            print('\tGaussian .LOG data read.\n')
         #
         return
     #
@@ -87,8 +127,9 @@ class log_data:
         NAtoms = self.NAtoms
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
-        for (n, line) in enumerate(self.loglines):
-            if (' Standard basis:' in line):
+        try:
+            lst = find_linenum(' Standard basis:',logfile)
+            for n in lst[0]:
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
                     atom_info[i,0] = int(float(elements[0]))  # atomic center number
@@ -98,22 +139,53 @@ class log_data:
                     coords[i,0] = float(elements[3])  # atomic center along x-axis
                     coords[i,1] = float(elements[4])  # atomic center along y-axis
                     coords[i,2] = float(elements[5])  # atomic center along z-axis
+        except:
+            lst = []
+            for (n, line) in enumerate(self.loglines):
+                if (' Standard basis:' in line):
+                    lst.append(n)
+                    for i in range(NAtoms):
+                        elements = self.loglines[n + i + 6].split()
+                        atom_info[i,0] = int(float(elements[0]))
+                        atom_info[i,1] = int(float(elements[1]))
+                        atom_info[i,2] = float(elements[2])
+                        coords[i,0] = float(elements[3])
+                        coords[i,1] = float(elements[4])
+                        coords[i,2] = float(elements[5])
+        #
+        try:
+            assert len(lst) > 0
+        except:
+            print('looking for molecular info but not found in file. Exiting...')
+            return
+        #
         return atom_info, coords
     #
-    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=None):
+    def get_matrix_lowtri_AO(self, string, nbasis, skip, columns, imaginary=False, Hermitian=True, start_inplace=False, n_0=0):
         #
-        if (start_inplace == False):
-            n_0 = 0
-        elif (start_inplace == True):
-            assert n_0 != None, 'feed an integer value for "n_0".'
-            n_0 = int(n_0)
+        if start_inplace:
+            if type(n_0) != int:
+                print('proper value for "n_0" not provided. Setting n_0=0 (default value)')
+                n_0 = 0
+            elif n_0 == 0:
+                print('warning: detected n_0=0. might want to specify different value of "n_0" if start_inplace=True.')
         #
         nbasis, skip, columns = int(nbasis), int(skip), int(columns)
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines[n_0:]):
-            if (string in line):
-                line_num.append(n+n_0)
+        try:
+            lst = find_linenum(string,logfile)
+            line_num = [lst[i] + n_0 for i in range(len(lst))]
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines[n_0:]):
+                if (string in line):
+                    line_num.append(n+n_0)
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format(string))
+            return
         #
         data = np.zeros((nbasis, nbasis), np.float64)
         #
@@ -163,10 +235,19 @@ class log_data:
         NAOs = self.nao
         cMO = np.zeros([NAOs,NAOs], np.float64)
         #
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            if ('Alpha MOs:' in line):
-                line_num.append(n)
+        try:
+            line_num = find_linenum('Alpha MOs:',logfile)
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines):
+                if ('Alpha MOs:' in line):
+                    line_num.append(n)
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
+            return
         #
         count = -1
         nline = line_num[count]
@@ -194,13 +275,23 @@ class log_data:
         #
         NAOs = self.nao
         cMO_CI = np.zeros([NAOs,NAOs], np.float64)
-        line_num = []
-        for (n, line) in enumerate(self.loglines):
-            try:
-                if ('FINAL COEFFICIENT MATRIX' in line):
-                    line_num.append(n)
-            except (IndexError, ValueError):
-                pass
+        #
+        try:
+            line_num = find_linenum('FINAL COEFFICIENT MATRIX',logfile)
+        except:
+            line_num = []
+            for (n, line) in enumerate(self.loglines):
+                try:
+                    if ('FINAL COEFFICIENT MATRIX' in line):
+                        line_num.append(n)
+                except:
+                    pass
+        #
+        try:
+            assert len(line_num) > 0
+        except:
+            print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
+            return
         #
         count = -1
         nline = line_num[count]
@@ -361,132 +452,149 @@ def get_ee_onee_AO(dens, ee_twoe, exchange=True, rhf=True):
         return
 
 def print_info(logic):
-    if (logic == True):
-        print('|=====================gauss_hf.py======================|')
-        print('|   Class:                                             |')
-        print('|******************************************************|')
-        print('|   log_data("/path/to/file.log"):                     |')
-        print('|       reads text from "file.log" and extracts data   |')
-        print('|       accessible via the methods listed below;       |')
-        print('|       expects "file.log" to be a Gaussian .LOG file. |')
-        print('|       instance variables:                            |')
-        print('|           logfile: path+name of the .LOG file        |')
-        print('|           loglines: text, through readlines() method |')
-        print('|           nao: # of AO basis fns                     |')
-        print('|           n_a: # of alpha electrons                  |')
-        print('|           n_b: # of beta electrons                   |')
-        print('|******************************************************|')
-        print('|   Methods:                                           |')
-        print('|******************************************************|')
-        print('|   get_molecule():                                    |')
-        print('|       returns two 2-D arrays containing information  |')
-        print('|       about molecular geometry. First array contains |')
-        print('|       atomic character info; second array contains   |')
-        print('|       coordinates, in angstroms, of the corresponding|')
-        print('|       atoms.                                         |')
-        print('|******************************************************|')
-        print('|   get_MOcoeffs_AO():                                 |')
-        print('|       returns the matrix of alpha MO coefficients    |')
-        print('|       (as column-vectors) in AO basis.               |')
-        print('|******************************************************|')
-        print('|   get_CASSCF_MOcoeffs_AO():                          |')
-        print('|       returns the matrix of alpha MO coefficients    |')
-        print('|       (as column-vectors) in AO basis for a CASSCF   |')
-        print('|       calculation.                                   |')
-        print('|******************************************************|')
-        print('|   get_overlap_AO():                                  |')
-        print('|       returns the overlap matrix, S, in AO basis.    |')
-        print('|******************************************************|')
-        print('|   get_kinetic_AO():                                  |')
-        print('|       returns the kinetic energy operator matrix,    |')
-        print('|       in AO basis.                                   |')
-        print('|******************************************************|')
-        print('|   get_potential_AO():                                |')
-        print('|       returns the electron-nuclear potential energy  |')
-        print('|       operator matrix, in AO basis.                  |')
-        print('|******************************************************|')
-        print('|   get_core_AO():                                     |')
-        print('|       returns the core Hamiltonian operator matrix,  |')
-        print('|       in AO basis.                                   |')
-        print('|******************************************************|')
-        print('|   get_density_AO():                                  |')
-        print('|       returns the alpha spin-density matrix, in AO   |')
-        print('|       basis. Assumes restricted reference.           |')
-        print('|******************************************************|')
-        print('|   get_dipole_x_AO():                                 |')
-        print('|       returns the electric dipole moment matrix for  |')
-        print('|       Cartesian dipole operator "x" in AO basis.     |')
-        print('|******************************************************|')
-        print('|   get_dipole_y_AO():                                 |')
-        print('|       returns the electric dipole moment matrix for  |')
-        print('|       Cartesian dipole operator "y" in AO basis.     |')
-        print('|******************************************************|')
-        print('|   get_dipole_z_AO():                                 |')
-        print('|       returns the electric dipole moment matrix for  |')
-        print('|       Cartesian dipole operator "z" in AO basis.     |')
-        print('|******************************************************|')
-        print('|   get_ee_twoe_AO():                                  |')
-        print('|       returns the electron-electron repulsion inte-  |')
-        print('|       grals, in a rank-4 tensor form, in AO basis.   |')
-        print('|******************************************************|')
-        print('|   Functions:                                         |')
-        print('|******************************************************|')
-        print('|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |')
-        print('|                  exchange=True, , rhf=True):         |')
-        print('|       returns an effective one-electron matrix for   |')
-        print('|       electron-electron interaction, evaluated using |')
-        print('|       the ERIs stored in the 4-rank tensor           |')
-        print('|       "ee_twoe_bas" and the density matrix "dens_bas"|')
-        print('|       (same basis set is assumed for both). If       |')
-        print('|       "exchange" set to "True", includes the exchange|')
-        print('|       integrals in the evaluation, otherwise Coulomb-|')
-        print('|       only. Needs alpha spin density, assumes        |')
-        print('|       restricted reference.                          |')
-        print('|******************************************************|')
-        print('|   get_matrix_lowertri_AO(string, nbasis, skip,       |')
-        print('|                          columns, imaginary=False,   |')
-        print('|                          Hermitian=True,             |')
-        print('|                          start_inplace=False,        |')
-        print('|                          n_0=None):                  |')
-        print('|       reads a lower triangular matrix in AO basis.   |')
-        print('|       NOTE: mainly for internal use, unless familiar |')
-        print('|======================================================|')
+    if logic: # same as if (logic == True):
+        s='''
+        \t|=====================gauss_hf.py======================|
+        \t|   Class:                                             |
+        \t|******************************************************|
+        \t|   log_data("/path/to/file.log"):                     |
+        \t|       reads text from "file.log" and extracts data   |
+        \t|       accessible via the methods listed below;       |
+        \t|       expects "file.log" to be a Gaussian .LOG file. |
+        \t|******************************************************|
+        \t|   Instance variables:                                |
+        \t|******************************************************|
+        \t|   logfile: path+name of the .LOG file                |
+        \t|   loglines: text, read through readlines() method    |
+        \t|   nao: # of AO basis fns                             |
+        \t|   n_a: # of alpha electrons                          |
+        \t|   n_b: # of beta electrons                           |
+        \t|******************************************************|
+        \t|   Methods:                                           |
+        \t|******************************************************|
+        \t|   get_molecule():                                    |
+        \t|       returns two 2-D arrays containing information  |
+        \t|       about molecular geometry. First array contains |
+        \t|       atomic character info; second array contains   |
+        \t|       Cartesian coordinates, in Å, of the            |
+        \t|       corresponding atoms.                           |
+        \t|******************************************************|
+        \t|   get_MOcoeffs_AO():                                 |
+        \t|       returns the matrix of alpha MO coefficients    |
+        \t|       (as column-vectors) in AO basis.               |
+        \t|******************************************************|
+        \t|   get_CASSCF_MOcoeffs_AO():                          |
+        \t|       returns the matrix of alpha MO coefficients    |
+        \t|       (as column-vectors), for a CASSCF calculation, |
+        \t|       in AO basis.                                   |
+        \t|******************************************************|
+        \t|   get_overlap_AO():                                  |
+        \t|       returns the overlap matrix, S, in AO basis.    |
+        \t|******************************************************|
+        \t|   get_kinetic_AO():                                  |
+        \t|       returns the kinetic energy operator matrix,    |
+        \t|       in AO basis.                                   |
+        \t|******************************************************|
+        \t|   get_potential_AO():                                |
+        \t|       returns the electron-nuclear potential energy  |
+        \t|       operator matrix, in AO basis.                  |
+        \t|******************************************************|
+        \t|   get_core_AO():                                     |
+        \t|       returns the core Hamiltonian operator matrix,  |
+        \t|       in AO basis.                                   |
+        \t|******************************************************|
+        \t|   get_density_AO():                                  |
+        \t|       returns the alpha spin-density matrix, in AO   |
+        \t|       basis. Assumes restricted reference.           |
+        \t|******************************************************|
+        \t|   get_dipole_x_AO():                                 |
+        \t|       returns the electric dipole moment matrix for  |
+        \t|       Cartesian dipole operator "x" in AO basis.     |
+        \t|******************************************************|
+        \t|   get_dipole_y_AO():                                 |
+        \t|       returns the electric dipole moment matrix for  |
+        \t|       Cartesian dipole operator "y" in AO basis.     |
+        \t|******************************************************|
+        \t|   get_dipole_z_AO():                                 |
+        \t|       returns the electric dipole moment matrix for  |
+        \t|       Cartesian dipole operator "z" in AO basis.     |
+        \t|******************************************************|
+        \t|   get_ee_twoe_AO():                                  |
+        \t|       returns the electron-electron repulsion inte-  |
+        \t|       grals, in a rank-4 tensor form, in AO basis.   |
+        \t|******************************************************|
+        \t|   Functions:                                         |
+        \t|******************************************************|
+        \t|   find_linenum(string, filename):                    |
+        \t|       returns a list of line-numbers (0-indexed),    |
+        \t|       that have text matching <string>, for          |
+        \t|       <filename>. This function uses `grep` so using |
+        \t|       this script on a Linux machine is preferred.   |
+        \t|******************************************************|
+        \t|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |
+        \t|                  exchange=True, , rhf=True):         |
+        \t|       returns an effective one-electron matrix for   |
+        \t|       electron-electron interaction, evaluated using |
+        \t|       the ERIs stored in the 4-rank tensor           |
+        \t|       "ee_twoe_bas" and the density matrix "dens_bas"|
+        \t|       (same basis set is assumed for both). If       |
+        \t|       "exchange" set to "True", includes the exchange|
+        \t|       integrals in the evaluation, otherwise Coulomb-|
+        \t|       only. Needs alpha spin density, assumes        |
+        \t|       restricted reference.                          |
+        \t|******************************************************|
+        \t|   get_matrix_lowertri_AO(string, nbasis, skip,       |
+        \t|                          columns, imaginary=False,   |
+        \t|                          Hermitian=True,             |
+        \t|                          start_inplace=False,        |
+        \t|                          n_0=None):                  |
+        \t|       reads a lower triangular matrix in AO basis.   |
+        \t|       NOTE: mainly for internal use, unless familiar |
+        \t|======================================================|\n
+        '''
+        print(s)
     else:
-        print('\tCall as print_info(True) to print info about this module.')
+        print('''
+        \tCall as `print_info(True)` to print information about this
+        \tmodule.\n
+        ''')
     return
 
 if (__name__ == '__main__'):
-    print('|======================================================|')
-    print('| Using "gauss_hf.py" as a python module:              |')
-    print('| 1. Copy to the same folder as your .py/.ipynb file.  |')
-    print('|                        OR                            |')
-    print('|    Add the path to "gauss_hf.py" to your system path:|')
-    print('|    >>> import sys                                    |')
-    print("|    >>> sys.path.append('/path/to/file/')             |")
-    print('|                                                      |')
-    print('| 2. Try either of these:                              |')
-    print('|    >>> import gauss_hf                               |')
-    print('|    >>> from gauss_hf import *                        |')
-    print('|====================gauss_hf.py=======================|')
-    print('|     Use "gauss_hf.py" ONLY if interested in the      |')
-    print('|     information extracted by this script, from       |')
-    print('| a Gaussian .LOG file of a Hartree-Fock calculation.  |')
-    print('|======================================================|')
-    print('| Python libraries required:                           |')
-    print('|     numpy: may need to install separately.           |')
-    print('|     re; os; sys: usually included with standard      |')
-    print('|                  Python installation.                |')
-    print('|======================================================|')
-    print('| IMPORTANT NOTE:                                      |')
-    print('|******************************************************|')
-    print('| It is assumed the following keywords and IOp flags   |')
-    print('| are specified in the route section of Gaussian       |')
-    print('| input:                                               |')
-    print('|******************************************************|')
-    print('|   #P ... scf(tight,maxcyc=1500,conventional)     &   |')
-    print('|     iop(3/33=6) extralinks(l316,l308) noraff     &   |')
-    print('|     symm=noint iop(3/33=3) pop(full)             &   |')
-    print('|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |')
-    print('|======================================================|')
-    print('|                                                      |')
+    s='''
+    \t|======================================================|
+    \t| Using "gauss_hf.py" as a python module:              |
+    \t| 1. Copy to the same folder as your .py/.ipynb file.  |
+    \t|                        OR                            |
+    \t|    Add the path to "gauss_hf.py" to your system path:|
+    \t|    >>> import sys                                    |
+    \t|    >>> sys.path.append('/path/to/file/')             |
+    \t|                                                      |
+    \t| 2. Try either of these:                              |
+    \t|    >>> import gauss_hf                               |
+    \t|    >>> from gauss_hf import *                        |
+    \t|====================gauss_hf.py=======================|
+    \t|     Use "gauss_hf.py" ONLY if interested in the      |
+    \t|     information extracted by this script, from       |
+    \t| a Gaussian .LOG file of a Hartree-Fock calculation.  |
+    \t|======================================================|
+    \t| Python libraries required:                           |
+    \t|     numpy: may need to install separately.           |
+    \t|     re; os; sys, subprocess: usually included with   |
+    \t|            standard Python installation.             |
+    \t|======================================================|
+    \t| IMPORTANT NOTE:                                      |
+    \t|******************************************************|
+    \t| It is assumed the following keywords and IOp flags   |
+    \t| are specified in the route section of Gaussian       |
+    \t| input:                                               |
+    \t|******************************************************|
+    \t|   #P ... scf(tight,maxcyc=1500,conventional)     &   |
+    \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
+    \t|     symm=noint iop(3/33=3) pop(full)             &   |
+    \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
+    \t|======================================================|\n
+    \t|                                                      |\n
+    '''
+    print(s)
     print_info(True)
