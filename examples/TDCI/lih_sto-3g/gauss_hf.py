@@ -92,14 +92,12 @@ class log_data:
                     except ValueError:
                         elements = self.loglines[n].split('=')
                         self.NAtoms = int(float(elements[1]))
-        #
-        try:
-            assert len(lst1) > 0; assert len(lst2) > 0
-        except:
-            print('''
-            \tlooking for basis set, electronic, and atomic info but not found in file!
-            ''')
-            pass
+        finally:
+            if (len(lst1) == 0 or len(lst2) == 0):
+                print('''
+                \tlooking for basis set, electronic, and atomic info, but not found in file!
+                ''')
+                pass
         #
         if (dum == 0):
             gauss_log = False
@@ -153,12 +151,10 @@ class log_data:
                         coords[i,0] = float(elements[3])
                         coords[i,1] = float(elements[4])
                         coords[i,2] = float(elements[5])
-        #
-        try:
-            assert len(lst) > 0
-        except:
-            print('looking for molecular info but not found in file. Exiting...')
-            return
+        finally:
+            if (len(lst) == 0):
+                print('looking for molecular info but not found in file. Exiting...')
+                return
         #
         return atom_info, coords
     #
@@ -181,12 +177,10 @@ class log_data:
             for (n, line) in enumerate(self.loglines[n_0:]):
                 if (string in line):
                     line_num.append(n+n_0)
-        #
-        try:
-            assert len(line_num) > 0
-        except:
-            print('looking for "{}" but not found in file. Exiting...'.format(string))
-            return
+        finally:
+            if (len(line_num) == 0):
+                print('looking for "{}" but not found in file. Exiting...'.format(string))
+                return
         #
         data = np.zeros((nbasis, nbasis), np.float64)
         #
@@ -243,12 +237,10 @@ class log_data:
             for (n, line) in enumerate(self.loglines):
                 if ('Alpha MOs:' in line):
                     line_num.append(n)
-        #
-        try:
-            assert len(line_num) > 0
-        except:
-            print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
-            return
+        finally:
+            if (len(line_num) == 0):
+                print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
+                return
         #
         count = -1
         nline = line_num[count]
@@ -282,17 +274,12 @@ class log_data:
         except:
             line_num = []
             for (n, line) in enumerate(self.loglines):
-                try:
-                    if ('FINAL COEFFICIENT MATRIX' in line):
-                        line_num.append(n)
-                except:
-                    pass
-        #
-        try:
-            assert len(line_num) > 0
-        except:
-            print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
-            return
+                if ('FINAL COEFFICIENT MATRIX' in line):
+                    line_num.append(n)
+        finally:
+            if (len(line_num) == 0):
+                print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
+                return
         #
         count = -1
         nline = line_num[count]
@@ -368,23 +355,19 @@ class log_data:
         #
         try:
             line_num = find_linenum('*** Dumping Two-Electron integrals ***',self.logfile)
-            read_error = False
         except:
             line_num = []
             for (n,line) in enumerate(self.loglines):
                 if ('*** Eumping Two-Electron integrals ***' in line):
-                    read_error = False
                     line_num.append(n)
-        #
-        try:
-            assert len(line_num) > 0
-        except:
-            print('Two-electron integrals not found.')
-            return
+        finally:
+            if (len(line_num) == 0):
+                print('Two-electron integrals not found.')
+                return
         #
         twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
         count = -1
-        n = linenum[count]
+        n = line_num[count]
         k = 7
         while (k < self.nao**4):
             try:
@@ -419,47 +402,49 @@ class log_data:
 
 def get_ee_onee_AO(dens, ee_twoe, exchange=True, rhf=True):
     #
-    assert len(dens.shape) == 2
-    assert len(ee_twoe.shape) == 4
-    assert dens.shape[0] == dens.shape[1], 'Density matrix (problem with axes 0 and 1, all axis-dimensions must be the same!)'
-    assert ee_twoe.shape[0] == ee_twoe.shape[1], 'ERIs (problem with axes 0 and 1, all axis-dimensions must be the same!)'
-    assert ee_twoe.shape[2] == ee_twoe.shape[3], 'ERIs (problem with axes 2 and 3, all axis-dimensions must be the same!)'
-    assert ee_twoe.shape[0] == ee_twoe.shape[2], 'ERIs (problem with axes 0 and 2, all axis-dimensions must be the same!)'
-    e = True
-    # the no-4-FOR-loops way: thanks to Dr. Harish Bhat (https://github.com/hbhat4000)
-    if (dens.shape[0] == ee_twoe.shape[0]):
-        nbas = dens.shape[0]
-        vee_data = np.zeros((nbas, nbas), np.float64)
-        e = False
-        ee_twoe_coul = ee_twoe.reshape((nbas, nbas, nbas**2))
-        if (exchange == True):
-            ee_twoe_ex = np.swapaxes(ee_twoe, 1, 2).reshape((nbas, nbas, nbas**2))
-            for u in range(nbas):
-                for v in range(u,nbas):
-                    # coulomb - 0.5*exchange
-                    # for l in range(nbas):
-                    #     for s in range(nbas):
-                    #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
-                    #         vee_data[u,v] -= 2*dens[l,s]*(0.5*ee_twoe[u,l,v,s])
-                    vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
-                    vee_data[u,v] -= 2 * 0.5 * ee_twoe_ex[u,v,:] @ dens.reshape((-1))
-                    vee_data[v,u] = np.conjugate(vee_data[u,v])
-        elif (exchange == False):
-            for u in range(nbas):
-                for v in range(u,nbas):
-                    # coulomb
-                    # for l in range(nbas):
-                    #     for s in range(nbas):
-                    #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
-                    vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
-                    vee_data[v,u] = np.conjugate(vee_data[u,v])
-        return vee_data
-    elif (e == True):
-        print('\nError: Shapes of density and ERI tensors are not compatible.')
+    try:
+        assert len(dens.shape) == 2, '\tDensity matrix must be a 2-index object'
+        assert len(ee_twoe.shape) == 4, '\tERI tensor must be a 4-index object'
+        assert dens.shape[0] == dens.shape[1], '\tDensity matrix: problem with axis-dimensions; they must all be the same!\n'
+        for i in range(4):
+            for j in range(i+1,4):
+                s = '''
+                \tERI tensor: problem with axes {} and {} (axis-dimensions must all be the same!)\n
+                '''
+                assert ee_twoe.shape[i] == ee_twoe.shape[j], s.format(i,j)
+    except AssertionError as e:
+        print(e)
         return
+    # the no-4-FOR-loops way: thanks to Dr. Harish Bhat (https://github.com/hbhat4000)
+    nbas = dens.shape[0]
+    vee_data = np.zeros((nbas, nbas), np.float64)
+    ee_twoe_coul = ee_twoe.reshape((nbas, nbas, nbas**2))
+    if (exchange == True):
+        ee_twoe_ex = np.swapaxes(ee_twoe, 1, 2).reshape((nbas, nbas, nbas**2))
+        for u in range(nbas):
+            for v in range(u,nbas):
+                # coulomb - 0.5*exchange
+                # for l in range(nbas):
+                #     for s in range(nbas):
+                #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                #         vee_data[u,v] -= 2*dens[l,s]*(0.5*ee_twoe[u,l,v,s])
+                vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
+                vee_data[u,v] -= 2 * 0.5 * ee_twoe_ex[u,v,:] @ dens.reshape((-1))
+                vee_data[v,u] = np.conjugate(vee_data[u,v])
+    elif (exchange == False):
+        for u in range(nbas):
+            for v in range(u,nbas):
+                # coulomb
+                # for l in range(nbas):
+                #     for s in range(nbas):
+                #         vee_data[u,v] += 2*dens[l,s]*(ee_twoe[u,v,l,s])
+                vee_data[u,v] = 2 * ee_twoe_coul[u,v,:] @ dens.reshape((-1))
+                vee_data[v,u] = np.conjugate(vee_data[u,v])
+    #
+    return vee_data
 
 def print_info(logic):
-    if logic: # same as if (logic == True):
+    if logic:
         s='''
         \t|=====================gauss_hf.py======================|
         \t|   Class:                                             |
