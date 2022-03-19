@@ -46,8 +46,7 @@ def draw_heatmap(x, y, map_value, title, orb):
     z_max = plt_z.max()
     plt_z = np.transpose(plt_z)
     #
-    plot_name = 'avg_occup_orb_{}'.format(orb)
-    img_name = plot_name+'.png'
+    img_name = 'avg_occup_orb_{}.png'.format(orb)
     #
     def myfmt(x, pos):
         return '{0:.2f}'.format(x)
