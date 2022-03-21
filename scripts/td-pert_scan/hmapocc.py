@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
+# import matplotlib.ticker as ticker
 import seaborn as sns
 
 '''
@@ -19,20 +19,18 @@ def get_xyz_from_dat_file(dat_file_path):
         x1 y1 z1
         ...
     '''
-    x = []
-    y = []
-    map_value = {}
+    x, y, map_value = [], [], {}
     for line in open(dat_file_path):
-        list = line.split()
-        temp_x = float(list[0])*100
-        temp_y = float(list[1])
-        temp_z = float(list[2])
+        lst = line.split()
+        temp_x = float(lst[0])*100
+        temp_y = float(lst[1])
+        temp_z = float(lst[2])
         x.append(temp_x)
         y.append(temp_y)
         map_value[(temp_x, temp_y)] = temp_z
-    plt_x = np.asarray(list(set(x)))
-    plt_y = np.asarray(list(set(y)))[::-1]
-    return plt_x, plt_y, map_value
+    x = np.asarray(list(set(x)))
+    y = np.asarray(list(set(y)))[::-1]
+    return x, y, map_value
 
 def draw_heatmap(x, y, map_value, title, orb, mp=False):
     #
@@ -47,8 +45,8 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False):
     #
     img_name = 'avg_occup_orb_{}.png'.format(orb)
     #
-    def myfmt(x, pos):
-        return '{0:.2f}'.format(x)
+    # def myfmt(x, pos):
+    #     return '{0:.2f}'.format(x)
     #
     plt.clf()
     # 
@@ -65,7 +63,8 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False):
         x_diff = abs(x[0] - x[1])/2
         plt.pcolor(x, y, plt_z, cmap=color_map, vmin=z_min, vmax=z_max)
         plt.axis([x.min()-x_diff, x.max()+x_diff, y.min()-y_diff, y.max()+y_diff])
-        plt.colorbar(format=ticker.FuncFormatter(myfmt)).set_label('MO occupation number', rotation=270, labelpad=20) # set_label(y=0.45)
+        # colorbar(format=ticker.FuncFormatter(myfmt)).set_label(y=0.45)
+        plt.colorbar(format='%.2f').set_label('MO occupation number', rotation=270, labelpad=20)
         #
         ax.set_xticklabels(xlabels)
         ax.set_yticklabels(ylabels) 
