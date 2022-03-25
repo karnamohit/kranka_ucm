@@ -141,10 +141,10 @@ class log_data:
         except:
             lst = []
             for (n, line) in enumerate(self.loglines):
-                if (' Standard basis:' in line):
+                if (' Input orientation:' in line):
                     lst.append(n)
                     for i in range(NAtoms):
-                        elements = self.loglines[n + i + 6].split()
+                        elements = self.loglines[n + i + 5].split()
                         atom_info[i,0] = int(float(elements[0]))
                         atom_info[i,1] = int(float(elements[1]))
                         atom_info[i,2] = float(elements[2])
