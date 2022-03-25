@@ -57,7 +57,7 @@ class log_data:
         try:
             # read no. of basis fns and electrons
             lst1 = find_linenum('primitive gaussians',logfile)
-            for n in lst1[0]:
+            for n in [lst1[0]]:
                 elements = self.loglines[n].split()
                 elements2 = self.loglines[n+1].split()
                 self.nao = int(float(elements[0]))
@@ -66,7 +66,7 @@ class log_data:
                 dum = 1
             # read atomic information
             lst2 = find_linenum('NAtoms',logfile)
-            for n in lst2[0]:
+            for n in [lst2[0]]:
                 try:
                     elements = self.loglines[n].split()
                     self.NAtoms = int(float(elements[1]))  # total number of atoms in the system
@@ -128,7 +128,7 @@ class log_data:
         atom_info = np.zeros([NAtoms,3], np.float64)
         try:
             lst = find_linenum(' Input orientation:',self.logfile)
-            for n in lst[0]:
+            for n in [lst[0]]:
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
                     atom_info[i,0] = int(float(elements[0]))  # atomic center number
