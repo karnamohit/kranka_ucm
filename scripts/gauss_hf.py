@@ -127,10 +127,10 @@ class log_data:
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
         try:
-            lst = find_linenum(' Input orientation:',self.logfile)
+            lst = find_linenum('Input orientation:',self.logfile)
             for n in [lst[0]]:
                 for i in range(NAtoms):
-                    elements = self.loglines[n + i + 6].split()
+                    elements = self.loglines[n + i + 5].split()
                     atom_info[i,0] = int(float(elements[0]))  # atomic center number
                     atom_info[i,1] = int(float(elements[1]))  # atomic number
                     atom_info[i,2] = float(elements[2])  # atomic type
@@ -141,7 +141,7 @@ class log_data:
         except:
             lst = []
             for (n, line) in enumerate(self.loglines):
-                if (' Input orientation:' in line):
+                if ('Input orientation:' in line):
                     lst.append(n)
                     for i in range(NAtoms):
                         elements = self.loglines[n + i + 5].split()
