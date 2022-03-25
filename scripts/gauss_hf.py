@@ -127,7 +127,7 @@ class log_data:
         coords = np.zeros([NAtoms,3], np.float64)
         atom_info = np.zeros([NAtoms,3], np.float64)
         try:
-            lst = find_linenum(' Standard basis:',self.logfile)
+            lst = find_linenum(' Input orientation:',self.logfile)
             for n in lst[0]:
                 for i in range(NAtoms):
                     elements = self.loglines[n + i + 6].split()
