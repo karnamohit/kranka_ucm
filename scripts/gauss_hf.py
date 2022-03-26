@@ -25,7 +25,7 @@ __status__ = "N/A"
 def find_linenum(s,txtfile): # locate matching string's line number(s) using `grep`
     strg = subprocess.Popen(['grep','-n', s, txtfile], stdout=subprocess.PIPE).stdout.read().decode("utf-8")
     lst = strg.split("\n")[:-1]
-    lst = [int(lst[i].split(":")[0]) for i in range(len(lst))]
+    lst = [int(lst[i].split(":")[0]) - 1 for i in range(len(lst))]
     # print(lst)
     return lst
 
