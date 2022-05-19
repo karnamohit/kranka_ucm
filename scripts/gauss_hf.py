@@ -190,6 +190,11 @@ class log_data:
         m = n + skip
         shift = 0
         #
+        if (imaginary == True and Hermitian == True):
+            factor = -1
+        else:
+            factor = 1
+        #
         loops = int(nbasis / columns) + 1
         last = int(nbasis % columns)
         for k in range(loops):
@@ -212,10 +217,7 @@ class log_data:
                         m = i + k*columns
                         data[m,s] = float(elements[j+1])
                         if (i != j):
-                            if (imaginary == True and Hermitian == True):
-                                data[s,m] = -1*data[m,s]
-                            else:
-                                data[s,m] = data[m,s]
+                            data[s,m] = factor*data[m,s]
                     m += 1
                 shift += irange
             except (IndexError, ValueError):
