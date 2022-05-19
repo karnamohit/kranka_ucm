@@ -95,23 +95,25 @@ class log_data:
                         self.NAtoms = int(float(elements[1]))
         finally:
             if (len(lst1) == 0 or len(lst2) == 0):
-                print('''
-                \tlooking for basis set, electronic, and atomic info, but not found in file!
-                ''')
+                if nonlog_error_msg:
+                    print('''
+                    \tlooking for basis set, electronic, and atomic info, but not found in file!
+                    ''')
                 pass
         #
         if (dum == 0):
             gauss_log = False
         #
         if (gauss_log == False):
-            s='''
-            \tText file may not be as expected (expecting Gaussian .LOG file):
-            \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
-            \tFurther, only "find_linenum()", "get_ee_onee_AO()" functions and
-            \t"get_matrix_lowtri_AO()" method may be accessible without errors. 
-            \tUse "help()" method to get more information about this module.\n
-            '''
-            print(s)
+            if nonlog_error_msg:
+                s='''
+                \tText file may not be as expected (expecting Gaussian .LOG file):
+                \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
+                \tFurther, only "find_linenum()", "get_ee_onee_AO()" functions and
+                \t"get_matrix_lowtri_AO()" method may be accessible without errors. 
+                \tUse "help()" method to get more information about this module.\n
+                '''
+                print(s)
         elif (gauss_log == True):
             print('\tGaussian .LOG data read.\n')
         #
