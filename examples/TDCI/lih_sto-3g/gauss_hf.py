@@ -528,10 +528,10 @@ def print_info(logic):
         \t|   Functions:                                         |
         \t|******************************************************|
         \t|   find_linenum(string, filename):                    |
-        \t|       returns a list of line-numbers (0-indexed),    |
-        \t|       that have text matching <string>, for          |
-        \t|       <filename>. This function uses `grep` (Linux)  |
-        \t|       or `findstr` (Windows) commands.               |
+        \t|       returns a list of line-numbers (0-indexed) of  |
+        \t|       lines that have text matching <string> from    |
+        \t|       inside the file <filename>. This function uses |
+        \t|       `grep` (Linux) or `findstr` (Windows) commands.|
         \t|******************************************************|
         \t|   get_ee_onee_AO(dens_bas, ee_twoe_bas,              |
         \t|                  exchange=True, , rhf=True):         |
