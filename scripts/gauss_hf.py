@@ -728,7 +728,7 @@ def print_info(logic):
         \t|                          n_0=None):                  |
         \t|       reads a lower triangular matrix in AO basis.   |
         \t|       NOTE: mainly for internal use, unless familiar |
-        \t|******************************************************|
+        \t|======================================================|
         \t|                                                      |
         \t|CLASS:                                                |
         \t|                                                      |
@@ -783,7 +783,7 @@ def print_info(logic):
         \t|   build_basis():                                     |
         \t|       returns a list, of lists returned from the     |
         \t|       build_shel() method, of the basis functions.   |
-        \t|******************************************************|
+        \t|======================================================|
         \t|                                                      |
         \t|FUNCTIONS:                                            |
         \t|                                                      |
