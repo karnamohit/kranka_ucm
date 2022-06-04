@@ -645,8 +645,14 @@ class basis:
 def print_info(logic):
     if logic:
         s='''
-        \t|=====================gauss_hf.py======================|
+        \t|======================================================|
+        \t|                                                      |
+        \t|                     gauss_hf.py                      |
+        \t|                                                      |
+        \t|======================================================|
+        \t|                                                      |
         \t|CLASS:                                                |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   log_data("/path/to/file.log"):                     |
@@ -723,7 +729,9 @@ def print_info(logic):
         \t|       reads a lower triangular matrix in AO basis.   |
         \t|       NOTE: mainly for internal use, unless familiar |
         \t|******************************************************|
+        \t|                                                      |
         \t|CLASS:                                                |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   basis("/path/to/file.log",""/path/to/file.fchk"):  |
@@ -776,7 +784,9 @@ def print_info(logic):
         \t|       returns a list, of lists returned from the     |
         \t|       build_shel() method, of the basis functions.   |
         \t|******************************************************|
+        \t|                                                      |
         \t|FUNCTIONS:                                            |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   find_linenum(string, filename):                    |
@@ -839,8 +849,6 @@ if (__name__ == '__main__'):
     \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
     \t|     symm=noint iop(3/33=3) pop(full)             &   |
     \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
-    \t|======================================================|
-    \t|                                                      |
     '''
     print(s)
     print_info(True)
