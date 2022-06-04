@@ -533,11 +533,11 @@ class basis:
         return shell
     #
     def centers_to_shells(self):
-        dict = {}
+        dict1 = {}
         list2 = []
         list3 = []
         for i in self.centers:
-            dict[i] = []
+            dict1[i] = []
         for (n, line) in enumerate(self.outfchkfile.loglines):
             if ('Shell types ' in line):
                 l = 1
@@ -559,30 +559,33 @@ class basis:
                         k = int(float(j))
                         list3.append(k)
                         if list2[a] == 0:
-                            dict[k].append(count)
+                            dict1[k].append(count)
                             count += 1
                         elif list2[a] == -1:
-                            dict[k].extend(list(range(count,(count+4),1)))
+                            dict1[k].extend(list(range(count,(count+4),1)))
                             count += 4
                         elif list2[a] == 1:
-                            dict[k].extend(list(range(count,(count+3),1)))
+                            dict1[k].extend(list(range(count,(count+3),1)))
                             count += 3
                         elif list2[a] == -2:
-                            dict[k].extend(list(range(count,(count+5),1)))
+                            dict1[k].extend(list(range(count,(count+5),1)))
                             count += 5
                         elif list2[a] == 2:
-                            dict[k].extend(list(range(count,(count+6),1)))
+                            dict1[k].extend(list(range(count,(count+6),1)))
                             count += 6
                         elif list2[a] == -3:
-                            dict[k].extend(list(range(count,(count+7),1)))
+                            dict1[k].extend(list(range(count,(count+7),1)))
                             count += 7
                         elif list2[a] == 3:
-                            dict[k].extend(list(range(count,(count+10),1)))
+                            dict1[k].extend(list(range(count,(count+10),1)))
                             count += 10
+                        else:
+                            print('shell-type {} (see GAUSSIAN documentation) not supported.'.format(list2[a]))
+                            return
                         a += 1
                     l += 1
-        # print(dict)
-        return dict
+        # print(dict1)
+        return dict1
     #
     def build_basis(self):
         basis = []
@@ -590,7 +593,10 @@ class basis:
             0:'S',1:'P',-1:'SP',2:'6D',-2:'5D',
             3:'10F',-3:'7F',
             }
-        dict = self.centers_to_shells()
+        dict1 = self.centers_to_shells()
+        if type(dict1) != dict:
+            print('problem with reading shell-types.')
+            return
         coords = self.atomic_coords
         ANGtoA0 = 1/0.529177
         for (n, line) in enumerate(self.outfile.loglines):
@@ -605,7 +611,7 @@ class basis:
                         Rx, Ry, Rz = coords[center-1, 0], coords[center-1, 1], coords[center-1, 2]
                         shell_center = [center, Rx*ANGtoA0, Ry*ANGtoA0, Rz*ANGtoA0]
                         shift2 = 0
-                        for i in range(dict[center]):
+                        for i in range(dict1[center]):
                             elements1 = self.outfile.loglines[n+1+k+shift+shift2+i+1].split()
                             shell_label = elements1[0]
                             # print('elements1 = ', elements1)
@@ -630,7 +636,7 @@ class basis:
                                     basis.append(bas)
                             shift2 += n_prim
                         # print('i, j, k = {}, {}, {}'.format(i,j,k))
-                        shift += shift2 + 1 + dict[center]
+                        shift += shift2 + 1 + dict1[center]
                 except (IndexError, TypeError, ValueError) as e:
                     # raise(e)
                     break
