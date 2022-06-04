@@ -53,12 +53,13 @@ class log_data:
         #
         # reading "logfile" contents
         log_file = open(self.logfile, 'r')
-        print('\nReading data from {}...'.format(self.logfile))
+        if nonlog_error_msg:
+            print('\nReading data from {}...'.format(self.logfile))
         self.loglines = log_file.readlines()
         log_file.close()
         self.loglines = [re.sub(r'D','E', s) for s in self.loglines]
         #
-        gauss_log = True
+        self.gauss_log = True
         dum = 0
         try:
             # read no. of basis fns and electrons
@@ -107,10 +108,10 @@ class log_data:
                 pass
         #
         if (dum == 0):
-            gauss_log = False
+            self.gauss_log = False
         #
-        if (gauss_log == False):
-            if nonlog_error_msg:
+        if nonlog_error_msg:
+            if (self.gauss_log == False):
                 s='''
                 \tText file may not be as expected (expecting Gaussian .LOG file):
                 \t"n_a", "n_b", "nao", "NAtoms" might NOT be available.
@@ -119,8 +120,8 @@ class log_data:
                 \tUse "help()" method to get more information about this module.\n
                 '''
                 print(s)
-        elif (gauss_log == True):
-            print('\tGaussian .LOG data read.\n')
+            elif (self.gauss_log == True):
+                print('\tGaussian .LOG data read.\n')
         #
         return
     #
@@ -161,7 +162,8 @@ class log_data:
                         coords[i,2] = float(elements[5])
         finally:
             if (len(lst) == 0):
-                print('looking for molecular info but not found in file. Exiting...')
+                if self.gauss_log:
+                    print('looking for molecular info but not found in file. Exiting...')
                 return
         #
         return atom_info, coords
@@ -249,7 +251,8 @@ class log_data:
                     line_num.append(n)
         finally:
             if (len(line_num) == 0):
-                print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
+                if self.gauss_log:
+                    print('looking for "{}" but not found in file. Exiting...'.format('Alpha MOs:'))
                 return
         #
         count = -1
@@ -288,7 +291,8 @@ class log_data:
                     line_num.append(n)
         finally:
             if (len(line_num) == 0):
-                print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
+                if self.gauss_log:
+                    print('looking for "{}" but not found in file. Exiting...'.format('FINAL COEFFICIENT MATRIX'))
                 return
         #
         count = -1
@@ -372,7 +376,8 @@ class log_data:
                     line_num.append(n)
         finally:
             if (len(line_num) == 0):
-                print('Two-electron integrals not found.')
+                if self.gauss_log:
+                    print('Two-electron integrals not found.')
                 return
         #
         twoe_AO_4D = np.zeros([self.nao, self.nao, self.nao, self.nao], np.float64)
@@ -645,8 +650,14 @@ class basis:
 def print_info(logic):
     if logic:
         s='''
-        \t|=====================gauss_hf.py======================|
+        \t|======================================================|
+        \t|                                                      |
+        \t|                     gauss_hf.py                      |
+        \t|                                                      |
+        \t|======================================================|
+        \t|                                                      |
         \t|CLASS:                                                |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   log_data("/path/to/file.log"):                     |
@@ -656,6 +667,8 @@ def print_info(logic):
         \t|******************************************************|
         \t| INSTANCE VARIABLES:                                  |
         \t|******************************************************|
+        \t|   gauss_log: (Boolean) evaluates if "file.log" is a  |
+        \t|       GAUSSIAN .LOG file                             |
         \t|   logfile: path+name of the .LOG file                |
         \t|   loglines: text, read through readlines() method    |
         \t|   nao: # of AO basis fns                             |
@@ -722,8 +735,10 @@ def print_info(logic):
         \t|                          n_0=None):                  |
         \t|       reads a lower triangular matrix in AO basis.   |
         \t|       NOTE: mainly for internal use, unless familiar |
-        \t|******************************************************|
+        \t|======================================================|
+        \t|                                                      |
         \t|CLASS:                                                |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   basis("/path/to/file.log",""/path/to/file.fchk"):  |
@@ -744,9 +759,9 @@ def print_info(logic):
         \t|   NAtoms: # of atoms                                 |
         \t|   centers: list of atomic-center indices             |
         \t|   basis_set_label: name of the standard basis set    |
-        \t|   d_cart: (Boolean) determines whether Cartesian     |
+        \t|   d_cart: (Boolean) evaluates whether Cartesian      |
         \t|       coordinates are being used for the d-orbitals  |
-        \t|   f_cart: (Boolean) determines whether Cartesian     |
+        \t|   f_cart: (Boolean) evaluates whether Cartesian      |
         \t|       coordinates are being used for the f-orbitals  |
         \t|******************************************************|
         \t| METHODS:                                             |
@@ -763,7 +778,7 @@ def print_info(logic):
         \t|        'd' - linear coefficients of primitives;      |
         \t|        'center' - index of atomic center;            |
         \t|        'center coords' - Cartesian coordinates of the| 
-        \t|                      atomic center (angstroms))      |
+        \t|                      atomic center (Å))              |
         \t|       for set of sub-shells defining a particular    |
         \t|       shell-type ('S', 'SP', etc.).                  |
         \t|******************************************************|
@@ -775,8 +790,10 @@ def print_info(logic):
         \t|   build_basis():                                     |
         \t|       returns a list, of lists returned from the     |
         \t|       build_shel() method, of the basis functions.   |
-        \t|******************************************************|
+        \t|======================================================|
+        \t|                                                      |
         \t|FUNCTIONS:                                            |
+        \t|                                                      |
         \t|******************************************************|
         \t|******************************************************|
         \t|   find_linenum(string, filename):                    |
@@ -839,8 +856,6 @@ if (__name__ == '__main__'):
     \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
     \t|     symm=noint iop(3/33=3) pop(full)             &   |
     \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
-    \t|======================================================|
-    \t|                                                      |
     '''
     print(s)
     print_info(True)
