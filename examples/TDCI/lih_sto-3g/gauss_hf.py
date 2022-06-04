@@ -453,18 +453,202 @@ def get_ee_onee_AO(dens, ee_twoe, exchange=True, rhf=True):
     #
     return vee_data
 
+class basis:
+    def __init__(self, pathLOG, pathFCHK):
+        self.outfile = log_data(pathLOG,nonlog_error_msg=False)
+        self.atoms, self.atomic_coords = self.outfile.get_molecule()
+        self.outfchkfile = log_data(pathFCHK)
+        self.NAOs = self.outfile.nao
+        self.NAtoms = self.outfile.NAtoms
+        # determine whether to use Cartesian or pure orbitals for "d" and "f" shells
+        for (n, line) in enumerate(self.outfile.loglines):
+            if ('Standard basis:' in line):
+                elements = self.outfile.loglines[n].split()
+                self.basis_set_label = elements[2]
+                elements1 = list(elements[-2])
+                elements2 = list(elements[-1])
+                # print(elements1[1], elements2[0])
+                if (elements1[1] == '5'):
+                    self.d_cart = False
+                elif (elements1[1] == '6'):
+                    self.d_cart = True
+                if (elements2[0] == '7'):
+                    self.f_cart = False
+                elif (elements2[0] == '10'):
+                    self.f_cart = True
+        # print(self.d_cart, self.f_cart)
+        self.centers = []
+        for i in range(self.NAtoms):
+            self.centers.append(i+1)
+        return
+    #
+    def build_shell(self, shell_label, n_prim, exps, coeffs, shell_center):
+        assert exps.shape[0] == coeffs.shape[0], 'numbers of contraction coefficients and exponents listed for shell {} (belonging to center no. {}) are not the same!!'.format(shell_label, shell_center[0])
+        assert exps.shape[0] == n_prim, 'number of exponents does not match the number of primitives listed for shell {} (belonging to center no. {})!'.format(shell_label, shell_center[0])
+        shell = []
+        # print('shell labelled {}'.format(shell_label))
+        if (shell_label != 'SP'):
+            if (shell_label == 'S'):
+                shells = 1
+                ang_mom = 0
+            elif (shell_label == 'P'):
+                shells = 3
+                ang_mom = 1
+            elif (shell_label == 'D'):
+                if (self.d_cart == True):
+                    shells = 6
+                elif (self.d_cart == False):
+                    shells = 5
+                ang_mom = 2
+            elif (shell_label == 'F'):
+                if (self.f_cart == True):
+                    shells = 10
+                elif (self.f_cart == False):
+                    shells = 7
+                ang_mom = 3
+            cgto_shell = {}
+            cgto_shell['sub-shells'] = shells
+            cgto_shell['ang. mom.'] = ang_mom
+            cgto_shell['primitives'] = n_prim
+            cgto_shell['alpha'] = exps
+            cgto_shell['d'] = coeffs[:,0]
+            cgto_shell['center'] = shell_center[0]
+            cgto_shell['center coords'] = shell_center[1:]
+            shell.append(cgto_shell)
+        elif (shell_label == 'SP'):
+            a, m = [1, 3], [0, 1]
+            for b in a:
+                cgto_shell = {}
+                cgto_shell['sub-shells'] = b
+                cgto_shell['ang. mom.'] = m[a.index(b)]
+                cgto_shell['primitives'] = n_prim
+                cgto_shell['alpha'] = exps
+                cgto_shell['d'] = coeffs[:,a.index(b)]
+                cgto_shell['center'] = shell_center[0]
+                cgto_shell['center coords'] = shell_center[1:]
+                shell.append(cgto_shell)
+        else:
+            print('shell-type not yet supported.')
+            return
+        return shell
+    #
+    def centers_to_shells(self):
+        dict = {}
+        list2 = []
+        list3 = []
+        for i in self.centers:
+            dict[i] = []
+        for (n, line) in enumerate(self.outfchkfile.loglines):
+            if ('Shell types ' in line):
+                l = 1
+                while ('Number of primitives per shell' not in self.outfchkfile.loglines[n+l]):
+                    elements = self.outfchkfile.loglines[n+l]
+                    # print(elements)
+                    for j in elements.split():
+                        k = int(float(j))
+                        list2.append(k)
+                    l += 1
+            if ('Shell to atom map' in line):
+                l = 1
+                count = 1
+                a = 0
+                while ('Primitive exponents' not in self.outfchkfile.loglines[n+l]):
+                    elements = self.outfchkfile.loglines[n+l]
+                    # print(elements)
+                    for j in elements.split():
+                        k = int(float(j))
+                        list3.append(k)
+                        if list2[a] == 0:
+                            dict[k].append(count)
+                            count += 1
+                        elif list2[a] == -1:
+                            dict[k].extend(list(range(count,(count+4),1)))
+                            count += 4
+                        elif list2[a] == 1:
+                            dict[k].extend(list(range(count,(count+3),1)))
+                            count += 3
+                        elif list2[a] == -2:
+                            dict[k].extend(list(range(count,(count+5),1)))
+                            count += 5
+                        elif list2[a] == 2:
+                            dict[k].extend(list(range(count,(count+6),1)))
+                            count += 6
+                        elif list2[a] == -3:
+                            dict[k].extend(list(range(count,(count+7),1)))
+                            count += 7
+                        elif list2[a] == 3:
+                            dict[k].extend(list(range(count,(count+10),1)))
+                            count += 10
+                        a += 1
+                    l += 1
+        # print(dict)
+        return dict
+    #
+    def build_basis(self):
+        basis = []
+        shell_label_dict = {
+            0:'S',1:'P',-1:'SP',2:'6D',-2:'5D',
+            3:'10F',-3:'7F',
+            }
+        dict = self.centers_to_shells()
+        coords = self.atomic_coords
+        ANGtoA0 = 1/0.529177
+        for (n, line) in enumerate(self.outfile.loglines):
+            if ('AO basis set ' in line):
+                shift = 0
+                stars = 0
+                try:
+                    for k in range(self.NAtoms):
+                        elements = self.outfile.loglines[n+1+k+shift].split()
+                        # print('elements = ', elements)
+                        center = int(float(elements[0]))
+                        Rx, Ry, Rz = coords[center-1, 0], coords[center-1, 1], coords[center-1, 2]
+                        shell_center = [center, Rx*ANGtoA0, Ry*ANGtoA0, Rz*ANGtoA0]
+                        shift2 = 0
+                        for i in range(dict[center]):
+                            elements1 = self.outfile.loglines[n+1+k+shift+shift2+i+1].split()
+                            shell_label = elements1[0]
+                            # print('elements1 = ', elements1)
+                            n_prim = int(float(elements1[1]))
+                            # print('n_prim = {}'.format(n_prim))
+                            scale_factor = float(elements1[2])
+                            exps = np.zeros((n_prim), np.float64)
+                            if (shell_label != 'SP'):
+                                coeffs = np.zeros((n_prim,1), np.float64)
+                            else:
+                                coeffs = np.zeros((n_prim,2), np.float64)
+                            for j in range(n_prim):
+                                elements2 = self.outfile.loglines[n+1+k+shift+shift2+i+1+j+1].split()
+                                # print('elements2 = ', elements2)
+                                exps[j] = (scale_factor**2)*float(elements2[0])
+                                coeffs[j,:] = elements2[1:]
+                            fns = self.build_shell(shell_label, n_prim, exps, coeffs, shell_center)
+                            if type(fns) != list:
+                                print('basis functions not read for atom center {}'.format(center))
+                            else:
+                                for bas in fns:
+                                    basis.append(bas)
+                            shift2 += n_prim
+                        # print('i, j, k = {}, {}, {}'.format(i,j,k))
+                        shift += shift2 + 1 + dict[center]
+                except (IndexError, TypeError, ValueError) as e:
+                    # raise(e)
+                    break
+        return basis
+
 def print_info(logic):
     if logic:
         s='''
         \t|=====================gauss_hf.py======================|
-        \t|   Class:                                             |
+        \t|CLASS:                                                |
+        \t|******************************************************|
         \t|******************************************************|
         \t|   log_data("/path/to/file.log"):                     |
         \t|       reads text from "file.log" and extracts data   |
         \t|       accessible via the methods listed below;       |
         \t|       expects "file.log" to be a Gaussian .LOG file. |
         \t|******************************************************|
-        \t|   Instance variables:                                |
+        \t| INSTANCE VARIABLES:                                  |
         \t|******************************************************|
         \t|   logfile: path+name of the .LOG file                |
         \t|   loglines: text, read through readlines() method    |
@@ -472,7 +656,7 @@ def print_info(logic):
         \t|   n_a: # of alpha electrons                          |
         \t|   n_b: # of beta electrons                           |
         \t|******************************************************|
-        \t|   Methods:                                           |
+        \t| METHODS:                                             |
         \t|******************************************************|
         \t|   get_molecule():                                    |
         \t|       returns two 2-D arrays containing information  |
@@ -525,7 +709,69 @@ def print_info(logic):
         \t|       returns the electron-electron repulsion inte-  |
         \t|       grals, in a rank-4 tensor form, in AO basis.   |
         \t|******************************************************|
-        \t|   Functions:                                         |
+        \t|   get_matrix_lowertri_AO(string, nbasis, skip,       |
+        \t|                          columns, imaginary=False,   |
+        \t|                          Hermitian=True,             |
+        \t|                          start_inplace=False,        |
+        \t|                          n_0=None):                  |
+        \t|       reads a lower triangular matrix in AO basis.   |
+        \t|       NOTE: mainly for internal use, unless familiar |
+        \t|******************************************************|
+        \t|CLASS:                                                |
+        \t|******************************************************|
+        \t|******************************************************|
+        \t|   basis("/path/to/file.log",""/path/to/file.fchk"):  |
+        \t|       reads text from "file.log" and "file.fchk" and |
+        \t|       extracts data accessible via the methods listed|
+        \t|       below; expects "file.log" and "file.fchk" to be|
+        \t|       Gaussian .LOG and .FCHK files, respectively.   | 
+        \t|******************************************************|
+        \t| INSTANCE VARIABLES:                                  |
+        \t|******************************************************|
+        \t|   outfile: path+name of the .LOG file                |
+        \t|   outfchkfile: path+name of the .FCHK file           |
+        \t|   atoms: first array from get_molecule() method of   |
+        \t|       the log_data class                             |
+        \t|   atomic_coords: array of atomic Cartesian           |
+        \t|       coordinates                                    |
+        \t|   NAOs: # of AO basis fns                            |
+        \t|   NAtoms: # of atoms                                 |
+        \t|   centers: list of atomic-center indices             |
+        \t|   basis_set_label: name of the standard basis set    |
+        \t|   d_cart: (Boolean) determines whether Cartesian     |
+        \t|       coordinates are being used for the d-orbitals  |
+        \t|   f_cart: (Boolean) determines whether Cartesian     |
+        \t|       coordinates are being used for the f-orbitals  |
+        \t|******************************************************|
+        \t| METHODS:                                             |
+        \t|******************************************************|
+        \t|   build_shell(shell_label, n_prim, exps, coeffs,     |
+        \t|                           shell_center):             |
+        \t|       returns a list of dictionaries with variables  |
+        \t|       ('sub-shells' - # of sub-shells;               |
+        \t|        'ang. mom.' - angular momentum (l) of sub-    |
+        \t|                      shells;                         |
+        \t|        'primitives' - # of Gaussian functions used   |
+        \t|                      as primitives per sub-shell;    |
+        \t|        'alpha' - exponents of primitives;            |
+        \t|        'd' - linear coefficients of primitives;      |
+        \t|        'center' - index of atomic center;            |
+        \t|        'center coords' - Cartesian coordinates of the| 
+        \t|                      atomic center (angstroms))      |
+        \t|       for set of sub-shells defining a particular    |
+        \t|       shell-type ('S', 'SP', etc.).                  |
+        \t|******************************************************|
+        \t|   centers_to_shells():                               |
+        \t|       returns a dictionary containing a map of atomic|
+        \t|       centers (keys) and lists of indices of basis   |
+        \t|       functions (values) centered on the atoms.      |
+        \t|******************************************************|
+        \t|   build_basis():                                     |
+        \t|       returns a list, of lists returned from the     |
+        \t|       build_shel() method, of the basis functions.   |
+        \t|******************************************************|
+        \t|FUNCTIONS:                                            |
+        \t|******************************************************|
         \t|******************************************************|
         \t|   find_linenum(string, filename):                    |
         \t|       returns a list of line-numbers (0-indexed) of  |
@@ -544,14 +790,6 @@ def print_info(logic):
         \t|       integrals in the evaluation, otherwise Coulomb-|
         \t|       only. Needs alpha spin density, assumes        |
         \t|       restricted reference.                          |
-        \t|******************************************************|
-        \t|   get_matrix_lowertri_AO(string, nbasis, skip,       |
-        \t|                          columns, imaginary=False,   |
-        \t|                          Hermitian=True,             |
-        \t|                          start_inplace=False,        |
-        \t|                          n_0=None):                  |
-        \t|       reads a lower triangular matrix in AO basis.   |
-        \t|       NOTE: mainly for internal use, unless familiar |
         \t|======================================================|\n
         '''
         print(s)
