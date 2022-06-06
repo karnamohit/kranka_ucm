@@ -854,7 +854,7 @@ if (__name__ == '__main__'):
     \t|******************************************************|
     \t|   #P ... scf(tight,maxcyc=1500,conventional)     &   |
     \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
-    \t|     symm=noint iop(3/33=3) pop(full)             &   |
+    \t|     symm=noint iop(3/33=3) pop(full) GFPrint     &   |
     \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
     '''
     print(s)
