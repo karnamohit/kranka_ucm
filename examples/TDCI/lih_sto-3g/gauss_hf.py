@@ -462,7 +462,7 @@ class basis:
     def __init__(self, pathLOG, pathFCHK):
         self.outfile = log_data(pathLOG,nonlog_error_msg=False)
         self.atoms, self.atomic_coords = self.outfile.get_molecule()
-        self.outfchkfile = log_data(pathFCHK)
+        self.outfchkfile = log_data(pathFCHK,nonlog_error_msg=False)
         self.NAOs = self.outfile.nao
         self.NAtoms = self.outfile.NAtoms
         # determine whether to use Cartesian or pure orbitals for "d" and "f" shells
@@ -854,7 +854,7 @@ if (__name__ == '__main__'):
     \t|******************************************************|
     \t|   #P ... scf(tight,maxcyc=1500,conventional)     &   |
     \t|     iop(3/33=6) extralinks(l316,l308) noraff     &   |
-    \t|     symm=noint iop(3/33=3) pop(full)             &   |
+    \t|     symm=noint iop(3/33=3) pop(full) GFPrint     &   |
     \t|     iop(6/8=1,3/36=1,4/33=3,5/33=3,6/33=3,9/33=3)    |
     '''
     print(s)

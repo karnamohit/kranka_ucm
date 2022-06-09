@@ -462,7 +462,7 @@ class basis:
     def __init__(self, pathLOG, pathFCHK):
         self.outfile = log_data(pathLOG,nonlog_error_msg=False)
         self.atoms, self.atomic_coords = self.outfile.get_molecule()
-        self.outfchkfile = log_data(pathFCHK)
+        self.outfchkfile = log_data(pathFCHK,nonlog_error_msg=False)
         self.NAOs = self.outfile.nao
         self.NAtoms = self.outfile.NAtoms
         # determine whether to use Cartesian or pure orbitals for "d" and "f" shells
