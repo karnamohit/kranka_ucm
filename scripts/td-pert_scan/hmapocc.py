@@ -32,7 +32,7 @@ def get_xyz_from_dat_file(dat_file_path):
     y = np.asarray(list(set(y)))[::-1]
     return x, y, map_value
 
-def draw_heatmap(x, y, map_value, title, orb, mp=False):
+def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape=False):
     #
     plt_z = np.zeros(shape = (len(x), len(y)))
     for i in range(len(x)):
@@ -64,7 +64,8 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False):
         plt.pcolor(x, y, plt_z, cmap=color_map, vmin=z_min, vmax=z_max)
         plt.axis([x.min()-x_diff, x.max()+x_diff, y.min()-y_diff, y.max()+y_diff])
         # colorbar(format=ticker.FuncFormatter(myfmt)).set_label(y=0.45)
-        plt.colorbar(format='%.2f').set_label('MO occupation number', rotation=270, labelpad=20)
+        if colorbar:
+            plt.colorbar(format='%.2f').set_label('MO occupation number', rotation=270, labelpad=20)
         #
         ax.set_xticklabels(xlabels)
         ax.set_yticklabels(ylabels) 
@@ -72,8 +73,8 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False):
         plt.grid()
     else:
         #
-        color_bar = {'format':ticker.FuncFormatter(myfmt),}#'label':'MO occupation number',
-        sns.heatmap(plt_z,vmin=0.0, vmax=2.0,cmap='coolwarm',square=True,cbar=True,cbar_kws=color_bar,xticklabels=xlabels,yticklabels=ylabels,)
+        color_bar = {'format':'%.2f',}#'label':'MO occupation number',
+        sns.heatmap(plt_z,vmin=0.0, vmax=2.0,cmap='coolwarm',square=sq_shape,cbar=colorbar,cbar_kws=color_bar,xticklabels=xlabels,yticklabels=ylabels,)
         #
         cbar = ax.collections[0].colorbar
         cbar.set_label(label='MO occupation number', rotation=270, labelpad=20)
