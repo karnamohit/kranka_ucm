@@ -32,7 +32,7 @@ def get_xyz_from_dat_file(dat_file_path):
     y = np.asarray(list(set(y)))[::-1]
     return x, y, map_value
 
-def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape=False):
+def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape=False,savefig=False):
     #
     plt_z = np.zeros(shape = (len(x), len(y)))
     for i in range(len(x)):
@@ -86,5 +86,6 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape
     figure = plt.gcf()
     # plt.show()
     #
-    plt.savefig(img_name,bbox_inches='tight',)
+    if savefig:
+        plt.savefig(img_name,bbox_inches='tight',)
     return figure
