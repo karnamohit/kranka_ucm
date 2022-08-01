@@ -88,4 +88,4 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape
     #
     if savefig:
         plt.savefig(img_name,bbox_inches='tight',)
-    return figure
+    return figure, plt_z, xlabels, ylabels
