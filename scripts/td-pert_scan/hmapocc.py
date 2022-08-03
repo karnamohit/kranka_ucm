@@ -76,8 +76,9 @@ def draw_heatmap(x, y, map_value, title, orb, mp=False, colorbar=False, sq_shape
         color_bar = {'format':'%.2f',}#'label':'MO occupation number',
         sns.heatmap(plt_z,vmin=0.0, vmax=2.0,cmap='coolwarm',square=sq_shape,cbar=colorbar,cbar_kws=color_bar,xticklabels=xlabels,yticklabels=ylabels,)
         #
-        cbar = ax.collections[0].colorbar
-        cbar.set_label(label='MO occupation number', rotation=270, labelpad=20)
+        if colorbar:
+            cbar = ax.collections[0].colorbar
+            cbar.set_label(label='MO occupation number', rotation=270, labelpad=20)
     #
     plt.title(title)
     plt.xlabel(r"field-strength ($\times 10^2$) (au)")
